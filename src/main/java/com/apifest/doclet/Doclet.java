@@ -73,8 +73,8 @@ public class Doclet {
     private static final String DEFAULT_MAPPING_NAME = "output_mapping_%s.xml";
 
     // GET, POST, PUT, DELETE, HEAD
-    private static List<String> httpMethods = Arrays.asList("@javax.ws.rs.GET, @javax.ws.rs.POST," +
-            "@javax.ws.rs.PUT", "@javax.ws.rs.DELET", "@javax.ws.rs.HEAD");
+    private static List<String> httpMethods = Arrays.asList("@javax.ws.rs.GET", "@javax.ws.rs.POST",
+            "@javax.ws.rs.PUT", "@javax.ws.rs.DELETE", "@javax.ws.rs.HEAD");
 
     public static boolean start(RootDoc root) {
         mappingVersion = System.getProperty("mapping.version");
@@ -104,11 +104,12 @@ public class Doclet {
 
         outputFile = System.getProperty("mapping.filename");
 
+
         System.out.println("mapping.version is: " + System.getProperty("mapping.version"));
         System.out.println("backend.host: " + System.getProperty("backend.host"));
         System.out.println("backend.port: " + System.getProperty("backend.port"));
+        System.out.println("Start ApiFest Doclet>>>>>>>>>>>>>>>>>>>");
 
-        System.out.println("Start ApiFest Javadoc Parser>>>>>>>>>>>>>>>>>>>");
 
         ClassDoc[] classes = root.classes();
         for (ClassDoc clazz : classes) {
@@ -169,7 +170,7 @@ public class Doclet {
         if (actionsTag != null) {
             // TODO: make it work with list of actions
             MappingAction action = new MappingAction();
-            action.setName(actionsTag);
+            action.setActionClassName(actionsTag);
             List<MappingAction> list = new ArrayList<MappingAction>();
             list.add(action);
             endpoint.setActions(list);
@@ -179,7 +180,7 @@ public class Doclet {
         if (filtersTag != null) {
             // TODO: make it work with list of filters
             ResponseFilter filter = new ResponseFilter();
-            filter.setName(filtersTag);
+            filter.setFilterClassName(filtersTag);
             List<ResponseFilter> list = new ArrayList<ResponseFilter>();
             list.add(filter);
             endpoint.setFilters(list);
@@ -192,7 +193,7 @@ public class Doclet {
 
         AnnotationDesc[] annotations = methodDoc.annotations();
         for (AnnotationDesc a : annotations) {
-            if (a != null && (httpMethods.contains(a))) {
+            if (a != null && (httpMethods.contains(a.annotationType().toString()))) {
                 endpoint.setMethod(a.annotationType().name());
             }
         }
