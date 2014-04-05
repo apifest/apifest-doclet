@@ -86,11 +86,11 @@ If your project uses maven, here is an example integration of ApiFest Doclet:
   </profiles>
 ```
 
-where *backend.host* and *backend.port* are defined in project.properties file. *mapping.version* and *mapping.filename* 
-could be defined in your pom.xml file so they sticks to the code.
+where *backend.host* and *backend.port* are defined in *project.properties* file; *mapping.version* and *mapping.filename* 
+could be defined in your pom.xml file so they stick to the code.
 Then you can use the following command in order to generate mapping xml file:
 ```mvn install -P gen-mapping```
 
 Note, that *mapping.version* value will be prepended to the apifest.external annotation value.
-If no value is set for mapping.filename, then output_mapping_[mapping.version].xml will be used. 
-If the example pom integration is used, then the mapping file will be stored in target/site/apidocs directory. 
+If no value is set for *mapping.filename*, then *output_mapping_[mapping.version].xml* will be used. 
+If the example pom integration is used, then the mapping file will be stored in *target/site/apidocs* directory. 
