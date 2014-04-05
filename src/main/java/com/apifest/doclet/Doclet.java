@@ -62,11 +62,15 @@ public class Doclet {
     // store action name as key and class as value
     private static Map<String, String> filters = new HashMap<String, String>();
 
-    private static String mappingVersion = null;
+    private static String mappingVersion;
 
-    private static String backendHost = null;
+    private static String backendHost;
 
-    private static Integer backendPort = null;
+    private static Integer backendPort;
+
+    private static String outputFile;
+
+    private static final String DEFAULT_MAPPING_NAME = "output_mapping_%s.xml";
 
     // GET, POST, PUT, DELETE, HEAD
     private static List<String> httpMethods = Arrays.asList("@javax.ws.rs.GET, @javax.ws.rs.POST," +
@@ -90,12 +94,15 @@ public class Doclet {
             System.out.println("ERROR: backend.port is not set");
             return false;
         }
+
         try {
             backendPort = Integer.valueOf(backendPortStr);
         } catch (NumberFormatException e) {
             System.out.println("ERROR: backendPort is not integer");
             return false;
         }
+
+        outputFile = System.getProperty("mapping.filename");
 
         System.out.println("mapping.version is: " + System.getProperty("mapping.version"));
         System.out.println("backend.host: " + System.getProperty("backend.host"));
@@ -115,7 +122,7 @@ public class Doclet {
         }
 
         try {
-            generateMappingFile("output_mapping.xml");
+            generateMappingFile(outputFile);
         } catch (JAXBException e) {
             System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
             return false;
@@ -124,6 +131,9 @@ public class Doclet {
     }
 
     private static void generateMappingFile(String outputFile) throws JAXBException {
+        if(outputFile == null || outputFile.length() == 0 || "null".equals(outputFile)) {
+            outputFile = String.format(DEFAULT_MAPPING_NAME, mappingVersion);
+        }
         JAXBContext jaxbContext = JAXBContext.newInstance(Mapping.class);
         Marshaller marshaller = jaxbContext.createMarshaller();
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
@@ -142,7 +152,7 @@ public class Doclet {
         String externalEndpoint = getFirstTag(methodDoc, APIFEST_EXTERNAL);
         if(externalEndpoint != null){
             endpoint = new MappingEndpoint();
-            endpoint.setExternalEndpoint(externalEndpoint);
+            endpoint.setExternalEndpoint("/" + mappingVersion + externalEndpoint);
         }
 
         String internalEndpoint = getFirstTag(methodDoc, APIFEST_INTERNAL);
