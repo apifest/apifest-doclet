@@ -27,8 +27,9 @@ ApiFest Doclet requires the following environment variables:
 - backend.host - the host(your API is running on) where requests should be translated to;
 - backend.port - the port of the backend.host.
 
-If your project uses maven, here is an example integration of ApiFest Doclet:
+If your project uses maven, here is an example integration of ApiFest Doclet in your pom.xml:
 ```
+...
 <profiles>
     <profile>
       <id>gen-mapping</id>
@@ -84,6 +85,7 @@ If your project uses maven, here is an example integration of ApiFest Doclet:
       </build>
     </profile>
   </profiles>
+...
 ```
 
 where *backend.host* and *backend.port* are defined in *project.properties* file; *mapping.version* and *mapping.filename* 
