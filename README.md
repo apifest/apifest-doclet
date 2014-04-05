@@ -1,6 +1,7 @@
 #ApiFest Doclet
 ApiFest Doclet is a tool that generates ApiFest mapping configuration file (XML) from Javadoc.
 Here are the custom Javadoc annotations that ApiFest Doclet is aware of:
+
 - @apifest.external - the endpoint visible to the world;
 - @apifest.internal - your API endpoint;
 - @apifest.actions - the class name(s) of the action(s) that will be executed before requests hit your API;
