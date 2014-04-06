@@ -154,47 +154,47 @@ public class Doclet {
         if(externalEndpoint != null){
             endpoint = new MappingEndpoint();
             endpoint.setExternalEndpoint("/" + mappingVersion + externalEndpoint);
-        }
 
-        String internalEndpoint = getFirstTag(methodDoc, APIFEST_INTERNAL);
-        if (internalEndpoint != null) {
-            endpoint.setInternalEndpoint(internalEndpoint);
-        }
+            String internalEndpoint = getFirstTag(methodDoc, APIFEST_INTERNAL);
+            if (internalEndpoint != null) {
+                endpoint.setInternalEndpoint(internalEndpoint);
+            }
 
-        String scope = getFirstTag(methodDoc, APIFEST_SCOPE);
-        if (scope != null) {
-            endpoint.setScope(scope);
-        }
+            String scope = getFirstTag(methodDoc, APIFEST_SCOPE);
+            if (scope != null) {
+                endpoint.setScope(scope);
+            }
 
-        String actionsTag = getFirstTag(methodDoc, APIFEST_ACTIONS);
-        if (actionsTag != null) {
-            // TODO: make it work with list of actions
-            MappingAction action = new MappingAction();
-            action.setActionClassName(actionsTag);
-            List<MappingAction> list = new ArrayList<MappingAction>();
-            list.add(action);
-            endpoint.setActions(list);
-        }
+            String actionsTag = getFirstTag(methodDoc, APIFEST_ACTIONS);
+            if (actionsTag != null) {
+                // TODO: make it work with list of actions
+                MappingAction action = new MappingAction();
+                action.setActionClassName(actionsTag);
+                List<MappingAction> list = new ArrayList<MappingAction>();
+                list.add(action);
+                endpoint.setActions(list);
+            }
 
-        String filtersTag = getFirstTag(methodDoc, APIFEST_FILTERS);
-        if (filtersTag != null) {
-            // TODO: make it work with list of filters
-            ResponseFilter filter = new ResponseFilter();
-            filter.setFilterClassName(filtersTag);
-            List<ResponseFilter> list = new ArrayList<ResponseFilter>();
-            list.add(filter);
-            endpoint.setFilters(list);
-        }
+            String filtersTag = getFirstTag(methodDoc, APIFEST_FILTERS);
+            if (filtersTag != null) {
+                // TODO: make it work with list of filters
+                ResponseFilter filter = new ResponseFilter();
+                filter.setFilterClassName(filtersTag);
+                List<ResponseFilter> list = new ArrayList<ResponseFilter>();
+                list.add(filter);
+                endpoint.setFilters(list);
+            }
 
-        String userToken = getFirstTag(methodDoc, APIFEST_USER_TOKEN);
-        if ("true".equals(userToken)) {
-            endpoint.setAuthRequired(userToken);
-        }
+            String userToken = getFirstTag(methodDoc, APIFEST_USER_TOKEN);
+            if ("true".equals(userToken)) {
+                endpoint.setAuthRequired(userToken);
+            }
 
-        AnnotationDesc[] annotations = methodDoc.annotations();
-        for (AnnotationDesc a : annotations) {
-            if (a != null && (httpMethods.contains(a.annotationType().toString()))) {
-                endpoint.setMethod(a.annotationType().name());
+            AnnotationDesc[] annotations = methodDoc.annotations();
+            for (AnnotationDesc a : annotations) {
+                if (a != null && (httpMethods.contains(a.annotationType().toString()))) {
+                    endpoint.setMethod(a.annotationType().name());
+                }
             }
         }
         return endpoint;
