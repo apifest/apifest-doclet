@@ -73,8 +73,8 @@ public class Doclet {
     private static final String DEFAULT_MAPPING_NAME = "output_mapping_%s.xml";
 
     // GET, POST, PUT, DELETE, HEAD
-    private static List<String> httpMethods = Arrays.asList("@javax.ws.rs.GET", "@javax.ws.rs.POST",
-            "@javax.ws.rs.PUT", "@javax.ws.rs.DELETE", "@javax.ws.rs.HEAD");
+    private static List<String> httpMethods = Arrays.asList("javax.ws.rs.GET", "javax.ws.rs.POST",
+            "javax.ws.rs.PUT", "javax.ws.rs.DELETE", "javax.ws.rs.HEAD");
 
     public static boolean start(RootDoc root) {
         mappingVersion = System.getProperty("mapping.version");
