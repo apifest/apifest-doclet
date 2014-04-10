@@ -17,6 +17,7 @@
 package com.apifest.doclet;
 
 import java.io.File;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import com.apifest.api.Mapping.Backend;
 import com.apifest.api.Mapping.EndpointsWrapper;
 import com.apifest.api.MappingAction;
 import com.apifest.api.MappingEndpoint;
+import com.apifest.api.MappingError;
 import com.apifest.api.ResponseFilter;
 import com.sun.javadoc.AnnotationDesc;
 import com.sun.javadoc.ClassDoc;
@@ -52,7 +54,9 @@ public class Doclet {
     private static final String APIFEST_ACTIONS = "apifest.actions";
     private static final String APIFEST_FILTERS = "apifest.filters";
     private static final String APIFEST_SCOPE = "apifest.scope";
-    private static final String APIFEST_USER_TOKEN = "apifest.token.user";
+
+    // valid values: user or client-app
+    private static final String APIFEST_AUTH_TYPE = "apifest.auth.type";
 
     private static List<MappingEndpoint> endpoints = new ArrayList<MappingEndpoint>();
 
@@ -71,6 +75,8 @@ public class Doclet {
     private static String outputFile;
 
     private static final String DEFAULT_MAPPING_NAME = "output_mapping_%s.xml";
+
+    private static final String NOT_SUPPORTED_VALUE = "value \"%s\" not supported for %s tag";
 
     // GET, POST, PUT, DELETE, HEAD
     private static List<String> httpMethods = Arrays.asList("javax.ws.rs.GET", "javax.ws.rs.POST",
@@ -104,27 +110,28 @@ public class Doclet {
 
         outputFile = System.getProperty("mapping.filename");
 
-
+        System.out.println("Start ApiFest Doclet>>>>>>>>>>>>>>>>>>>");
         System.out.println("mapping.version is: " + System.getProperty("mapping.version"));
         System.out.println("backend.host: " + System.getProperty("backend.host"));
         System.out.println("backend.port: " + System.getProperty("backend.port"));
-        System.out.println("Start ApiFest Doclet>>>>>>>>>>>>>>>>>>>");
-
-
-        ClassDoc[] classes = root.classes();
-        for (ClassDoc clazz : classes) {
-            MethodDoc[] mDocs = clazz.methods();
-            for (MethodDoc doc : mDocs) {
-                MappingEndpoint endpoint = getMappingEndpoint(doc);
-                if(endpoint != null) {
-                    endpoints.add(endpoint);
-                }
-            }
-        }
 
         try {
+            ClassDoc[] classes = root.classes();
+            for (ClassDoc clazz : classes) {
+                MethodDoc[] mDocs = clazz.methods();
+                for (MethodDoc doc : mDocs) {
+                    MappingEndpoint endpoint = getMappingEndpoint(doc);
+                    if(endpoint != null) {
+                        endpoints.add(endpoint);
+                    }
+                }
+            }
+
             generateMappingFile(outputFile);
         } catch (JAXBException e) {
+            System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
+            return false;
+        } catch (ParseException e) {
             System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
             return false;
         }
@@ -147,7 +154,7 @@ public class Doclet {
         marshaller.marshal(mapping, new File(outputFile));
     }
 
-    private static MappingEndpoint getMappingEndpoint(MethodDoc methodDoc) {
+    private static MappingEndpoint getMappingEndpoint(MethodDoc methodDoc) throws ParseException {
         MappingEndpoint endpoint = null;
 
         String externalEndpoint = getFirstTag(methodDoc, APIFEST_EXTERNAL);
@@ -185,9 +192,14 @@ public class Doclet {
                 endpoint.setFilters(list);
             }
 
-            String userToken = getFirstTag(methodDoc, APIFEST_USER_TOKEN);
-            if ("true".equals(userToken)) {
-                endpoint.setAuthRequired(userToken);
+            String authType = getFirstTag(methodDoc, APIFEST_AUTH_TYPE);
+            if(authType != null){
+                if(MappingEndpoint.AUTH_TYPE_USER.equals(authType) || MappingEndpoint.AUTH_TYPE_CLIENT_APP.equals(authType)) {
+                    endpoint.setAuthType(authType);
+                } else {
+                    String errorMsg = String.format(NOT_SUPPORTED_VALUE, authType, APIFEST_AUTH_TYPE);
+                    throw new ParseException(errorMsg, 0);
+                }
             }
 
             AnnotationDesc[] annotations = methodDoc.annotations();
