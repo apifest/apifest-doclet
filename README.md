@@ -7,7 +7,7 @@ Here are the custom Javadoc annotations that ApiFest Doclet is aware of:
 - @apifest.actions - the class name(s) of the action(s) that will be executed before requests hit your API;
 - @apifest.filters - the class name(s) of the filter(s) that will be executed before responses from API are returned back;
 - @apifest.scope - scope(s)(comma-separated list) of the endpoint;
-- @apifest.auth.type - *user* if user authentication is required, *client-app* if client application authentication only is required;
+- @apifest.auth.type - *user* if user authentication is required, *client-app* if only client application authentication is required;
 
 Currently, JAX-RS HTTP method annotations are used for setting the HTTP method of the endpoint.
 
