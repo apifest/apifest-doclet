@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -51,9 +53,11 @@ public class Doclet {
 
     private static final String APIFEST_INTERNAL = "apifest.internal";
     private static final String APIFEST_EXTERNAL = "apifest.external";
-    private static final String APIFEST_ACTIONS = "apifest.actions";
-    private static final String APIFEST_FILTERS = "apifest.filters";
+    private static final String APIFEST_ACTION = "apifest.action";
+    private static final String APIFEST_FILTER = "apifest.filter";
     private static final String APIFEST_SCOPE = "apifest.scope";
+    private static final String APIFEST_RE = "apifest.re.";
+    private static final Pattern VAR_PATTERN = Pattern.compile("(\\{)(\\p{Alnum}+\\p{Punct}*\\p{Alnum}*)(\\})");
 
     // valid values: user or client-app
     private static final String APIFEST_AUTH_TYPE = "apifest.auth.type";
@@ -165,6 +169,16 @@ public class Doclet {
             String internalEndpoint = getFirstTag(methodDoc, APIFEST_INTERNAL);
             if (internalEndpoint != null) {
                 endpoint.setInternalEndpoint(internalEndpoint);
+                Matcher m = VAR_PATTERN.matcher(internalEndpoint);
+                if(m.find()) {
+                    String varName = m.group(2);
+                    //get RE if any var in internal path
+                    String varExpression = getFirstTag(methodDoc, APIFEST_RE + varName);
+                    if(varExpression != null) {
+                        endpoint.setVarName(varName);
+                        endpoint.setVarExpression(varExpression);
+                    }
+                }
             }
 
             String scope = getFirstTag(methodDoc, APIFEST_SCOPE);
@@ -172,9 +186,8 @@ public class Doclet {
                 endpoint.setScope(scope);
             }
 
-            String actionsTag = getFirstTag(methodDoc, APIFEST_ACTIONS);
+            String actionsTag = getFirstTag(methodDoc, APIFEST_ACTION);
             if (actionsTag != null) {
-                // TODO: make it work with list of actions
                 MappingAction action = new MappingAction();
                 action.setActionClassName(actionsTag);
                 List<MappingAction> list = new ArrayList<MappingAction>();
@@ -182,9 +195,8 @@ public class Doclet {
                 endpoint.setActions(list);
             }
 
-            String filtersTag = getFirstTag(methodDoc, APIFEST_FILTERS);
+            String filtersTag = getFirstTag(methodDoc, APIFEST_FILTER);
             if (filtersTag != null) {
-                // TODO: make it work with list of filters
                 ResponseFilter filter = new ResponseFilter();
                 filter.setFilterClassName(filtersTag);
                 List<ResponseFilter> list = new ArrayList<ResponseFilter>();
@@ -218,5 +230,13 @@ public class Doclet {
             return extTags[0].text();
         }
         return null;
+    }
+
+    public static void main(String [] args) {
+        String p = "/customers/api/customers/{customer1_!Id}";
+        Matcher m = VAR_PATTERN.matcher(p);
+        if(m.find()) {
+            System.out.println("OK:" + m.group(2));
+        }
     }
 }
