@@ -231,12 +231,4 @@ public class Doclet {
         }
         return null;
     }
-
-    public static void main(String [] args) {
-        String p = "/customers/api/customers/{customer1_!Id}";
-        Matcher m = VAR_PATTERN.matcher(p);
-        if(m.find()) {
-            System.out.println("OK:" + m.group(2));
-        }
-    }
 }
