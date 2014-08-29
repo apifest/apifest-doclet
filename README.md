@@ -6,7 +6,7 @@ Here are the custom Javadoc annotations that ApiFest Doclet is aware of:
 - @apifest.internal - your API endpoint;
 - @apifest.action - the class name of the action that will be executed before requests hit your API;
 - @apifest.filter - the class name of the filter that will be executed before responses from API are returned back;
-- @apifest.scope - scope(s)(comma-separated list) of the endpoint;
+- @apifest.scope - scope(s)(space-separated list) of the endpoint;
 - @apifest.auth.type - *user* if user authentication is required, *client-app* if only client application authentication is required;
 - @apifest.re.{varName} - regular expression used for variable with name {varName} (without brackets);
 
