@@ -29,7 +29,8 @@ ApiFest Doclet requires the following environment variables:
 - mapping.version - the version your API will be exposed externally;
 - mapping.filename - the name of the mapping configuration file that will be generated;
 - backend.host - the host(your API is running on) where requests should be translated to;
-- backend.port - the port of the backend.host.
+- backend.port - the port of the backend.host;
+- application.path - the application path used to obtain all application resources.
 
 If your project uses maven, here is an example integration of ApiFest Doclet in your pom.xml:
 ```
