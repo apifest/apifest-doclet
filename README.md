@@ -80,6 +80,7 @@ If your project uses maven, here is an example integration of ApiFest Doclet in 
                     <additionalJOption>-J-Dmapping.filename=${mapping.filename}</additionalJOption>
                     <additionalJOption>-J-Dbackend.host=${backend.host}</additionalJOption>
                     <additionalJOption>-J-Dbackend.port=${backend.port}</additionalJOption>
+                    <additionalJOption>-J-Dapplication.path=${application.path}</additionalJOption>
                   </additionalJOptions>
                   <useStandardDocletOptions>false</useStandardDocletOptions>
                 </configuration>
@@ -94,7 +95,8 @@ If your project uses maven, here is an example integration of ApiFest Doclet in 
 ```
 
 where *backend.host* and *backend.port* are defined in *project.properties* file; *mapping.version* and *mapping.filename* 
-could be defined in your pom.xml file so they stick to the code.
+could be defined in your pom.xml file so they stick to the code. *application.path* is the application path used to 
+obtain all application resources.
 Then you can use the following command in order to generate mapping xml file:
 ```mvn install -P gen-mapping```
 
