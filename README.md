@@ -9,7 +9,9 @@ Here are the custom Javadoc annotations that ApiFest Doclet is aware of:
 - @apifest.scope - scope(s)(space-separated list) of the endpoint;
 - @apifest.auth.type - *user* if user authentication is required, *client-app* if only client application authentication is required. 
 Note, that if the endpoint could be accessible without access token, then just skip this tag;
-- @apifest.re.{varName} - regular expression used for variable with name {varName} (without brackets);
+- @apifest.re.{varName} - regular expression used for variable with name {varName} (without brackets); if several variables, then
+add @apifest.re.{varName} for each of them.
+
 
 Currently, JAX-RS HTTP method annotations are used for setting the HTTP method of the endpoint.
 

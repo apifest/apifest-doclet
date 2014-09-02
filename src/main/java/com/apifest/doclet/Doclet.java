@@ -57,7 +57,7 @@ public class Doclet {
     private static final String APIFEST_FILTER = "apifest.filter";
     private static final String APIFEST_SCOPE = "apifest.scope";
     private static final String APIFEST_RE = "apifest.re.";
-    private static final Pattern VAR_PATTERN = Pattern.compile("(\\{)(\\p{Alnum}+\\p{Punct}*\\p{Alnum}*)(\\})");
+    private static final Pattern VAR_PATTERN = Pattern.compile("(\\{)(\\w*-?_?\\w*)(\\})");
 
     // valid values: user or client-app
     private static final String APIFEST_AUTH_TYPE = "apifest.auth.type";
@@ -77,6 +77,8 @@ public class Doclet {
     private static Integer backendPort;
 
     private static String outputFile;
+
+    private static String applicationPath;
 
     private static final String DEFAULT_MAPPING_NAME = "output_mapping_%s.xml";
 
@@ -113,6 +115,8 @@ public class Doclet {
         }
 
         outputFile = System.getProperty("mapping.filename");
+
+        applicationPath = System.getProperty("application.path");
 
         System.out.println("Start ApiFest Doclet>>>>>>>>>>>>>>>>>>>");
         System.out.println("mapping.version is: " + System.getProperty("mapping.version"));
@@ -168,15 +172,23 @@ public class Doclet {
 
             String internalEndpoint = getFirstTag(methodDoc, APIFEST_INTERNAL);
             if (internalEndpoint != null) {
-                endpoint.setInternalEndpoint(internalEndpoint);
+                endpoint.setInternalEndpoint(applicationPath + internalEndpoint);
                 Matcher m = VAR_PATTERN.matcher(internalEndpoint);
-                if(m.find()) {
+                int i = 1;
+                while(m.find()) {
                     String varName = m.group(2);
+
                     //get RE if any var in internal path
                     String varExpression = getFirstTag(methodDoc, APIFEST_RE + varName);
                     if(varExpression != null) {
-                        endpoint.setVarName(varName);
-                        endpoint.setVarExpression(varExpression);
+                        if (endpoint.getVarName() == null) {
+                            endpoint.setVarName(varName);
+                            endpoint.setVarExpression(varExpression);
+                        } else {
+                            // add current varName and varExpression with SPACE before that
+                            endpoint.setVarName(endpoint.getVarName() + " " + varName);
+                            endpoint.setVarExpression(endpoint.getVarExpression() + " " + varExpression);
+                        }
                     }
                 }
             }
