@@ -31,6 +31,7 @@ ApiFest Doclet requires the following environment variables:
 - backend.host - the host(your API is running on) where requests should be translated to;
 - backend.port - the port of the backend.host;
 - application.path - the application path used to obtain all application resources.
+- defaultActionClass - the fully qualified action class that will be added if no action is declared in Javadoc annotations
 
 If your project uses maven, here is an example integration of ApiFest Doclet in your pom.xml:
 ```
@@ -81,6 +82,7 @@ If your project uses maven, here is an example integration of ApiFest Doclet in 
                     <additionalJOption>-J-Dbackend.host=${backend.host}</additionalJOption>
                     <additionalJOption>-J-Dbackend.port=${backend.port}</additionalJOption>
                     <additionalJOption>-J-Dapplication.path=${application.path}</additionalJOption>
+                    <additionalJOption>-J-DdefaultActionClass=${defaultActionClass}</additionalJOption>
                   </additionalJOptions>
                   <useStandardDocletOptions>false</useStandardDocletOptions>
                 </configuration>

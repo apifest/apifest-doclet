@@ -64,12 +64,6 @@ public class Doclet {
 
     private static List<MappingEndpoint> endpoints = new ArrayList<MappingEndpoint>();
 
-    // store action name as key and class as value
-    private static Map<String, String> actions = new HashMap<String, String>();
-
-    // store action name as key and class as value
-    private static Map<String, String> filters = new HashMap<String, String>();
-
     private static String mappingVersion;
 
     private static String backendHost;
@@ -79,6 +73,9 @@ public class Doclet {
     private static String outputFile;
 
     private static String applicationPath;
+
+    // if no action is declared, use that
+    private static String defaultActionClass;
 
     private static final String DEFAULT_MAPPING_NAME = "output_mapping_%s.xml";
 
@@ -113,6 +110,8 @@ public class Doclet {
             System.out.println("ERROR: backendPort is not integer");
             return false;
         }
+
+        defaultActionClass = System.getProperty("defaultActionClass");
 
         outputFile = System.getProperty("mapping.filename");
 
@@ -202,18 +201,20 @@ public class Doclet {
             if (actionsTag != null) {
                 MappingAction action = new MappingAction();
                 action.setActionClassName(actionsTag);
-                List<MappingAction> list = new ArrayList<MappingAction>();
-                list.add(action);
-                endpoint.setActions(list);
+                endpoint.setAction(action);
+            } else {
+                if (defaultActionClass != null) {
+                    MappingAction action = new MappingAction();
+                    action.setActionClassName(defaultActionClass);
+                    endpoint.setAction(action);
+                }
             }
 
             String filtersTag = getFirstTag(methodDoc, APIFEST_FILTER);
             if (filtersTag != null) {
                 ResponseFilter filter = new ResponseFilter();
                 filter.setFilterClassName(filtersTag);
-                List<ResponseFilter> list = new ArrayList<ResponseFilter>();
-                list.add(filter);
-                endpoint.setFilters(list);
+                endpoint.setFilters(filter);
             }
 
             String authType = getFirstTag(methodDoc, APIFEST_AUTH_TYPE);
