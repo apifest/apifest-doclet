@@ -77,6 +77,9 @@ public class Doclet {
     // if no action is declared, use that
     private static String defaultActionClass;
 
+    // if no filter is declared, use that
+    private static String defaultFilterClass;
+
     private static final String DEFAULT_MAPPING_NAME = "output_mapping_%s.xml";
 
     private static final String NOT_SUPPORTED_VALUE = "value \"%s\" not supported for %s tag";
@@ -112,6 +115,8 @@ public class Doclet {
         }
 
         defaultActionClass = System.getProperty("defaultActionClass");
+
+        defaultFilterClass = System.getProperty("defaultFilterClass");
 
         outputFile = System.getProperty("mapping.filename");
 
@@ -215,6 +220,12 @@ public class Doclet {
                 ResponseFilter filter = new ResponseFilter();
                 filter.setFilterClassName(filtersTag);
                 endpoint.setFilters(filter);
+            }  else {
+                if (defaultFilterClass != null) {
+                    ResponseFilter filter = new ResponseFilter();
+                    filter.setFilterClassName(defaultFilterClass);
+                    endpoint.setFilters(filter);
+                }
             }
 
             String authType = getFirstTag(methodDoc, APIFEST_AUTH_TYPE);
