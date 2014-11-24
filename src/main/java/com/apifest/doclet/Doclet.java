@@ -20,9 +20,7 @@ import java.io.File;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,7 +33,6 @@ import com.apifest.api.Mapping.Backend;
 import com.apifest.api.Mapping.EndpointsWrapper;
 import com.apifest.api.MappingAction;
 import com.apifest.api.MappingEndpoint;
-import com.apifest.api.MappingError;
 import com.apifest.api.ResponseFilter;
 import com.sun.javadoc.AnnotationDesc;
 import com.sun.javadoc.ClassDoc;
@@ -57,6 +54,8 @@ public class Doclet {
     private static final String APIFEST_FILTER = "apifest.filter";
     private static final String APIFEST_SCOPE = "apifest.scope";
     private static final String APIFEST_RE = "apifest.re.";
+    private static final String APIFEST_BACKEND_HOST = "apifest.backend.host";
+    private static final String APIFEST_BACKEND_PORT = "apifest.backend.port";
     private static final Pattern VAR_PATTERN = Pattern.compile("(\\{)(\\w*-?_?\\w*)(\\})");
 
     // valid values: user or client-app
@@ -229,13 +228,25 @@ public class Doclet {
             }
 
             String authType = getFirstTag(methodDoc, APIFEST_AUTH_TYPE);
-            if(authType != null){
+            if(authType != null) {
                 if(MappingEndpoint.AUTH_TYPE_USER.equals(authType) || MappingEndpoint.AUTH_TYPE_CLIENT_APP.equals(authType)) {
                     endpoint.setAuthType(authType);
                 } else {
                     String errorMsg = String.format(NOT_SUPPORTED_VALUE, authType, APIFEST_AUTH_TYPE);
                     throw new ParseException(errorMsg, 0);
                 }
+            }
+
+            String endpointBackendHost = getFirstTag(methodDoc, APIFEST_BACKEND_HOST);
+            String endpointBackendPort = getFirstTag(methodDoc, APIFEST_BACKEND_PORT);
+            if(endpointBackendHost != null && endpointBackendPort != null) {
+               try {
+                   int port = Integer.valueOf(endpointBackendPort);
+                   endpoint.setBackendHost(endpointBackendHost);
+                   endpoint.setBackendPort(port);
+               } catch (NumberFormatException e) {
+                   System.out.println("ERROR: apifest.backend.port " + endpoint.getExternalEndpoint() + " for endpoint is not valid, " +  "default backend host and port will be used");
+               }
             }
 
             AnnotationDesc[] annotations = methodDoc.annotations();
