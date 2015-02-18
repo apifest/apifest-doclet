@@ -30,9 +30,9 @@ ApiFest Doclet requires the following environment variables:
 - mapping.filename - the name of the mapping configuration file that will be generated;
 - backend.host - the host(your API is running on) where requests should be translated to;
 - backend.port - the port of the backend.host;
-- application.path - the application path used to obtain all application resources.
-- defaultActionClass - the fully qualified action class that will be added if no action is declared in Javadoc annotations
-- defaultFilterClass - the fully qualified filter class that will be added if no filter is declared in Javadoc annotations
+- application.path - the application path used to obtain all application resources, it will be preprended to each internal path;
+- defaultActionClass - the fully qualified action class that will be added if no action is declared in Javadoc annotations;
+- defaultFilterClass - the fully qualified filter class that will be added if no filter is declared in Javadoc annotations.
 
 If your project uses maven, here is an example integration of ApiFest Doclet in your pom.xml:
 ```

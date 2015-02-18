@@ -58,6 +58,9 @@ public class Doclet {
     private static final String APIFEST_BACKEND_PORT = "apifest.backend.port";
     private static final Pattern VAR_PATTERN = Pattern.compile("(\\{)(\\w*-?_?\\w*)(\\})");
 
+    // returned when a variable is missing in the properties file and then passed to the Doclet as env variable
+    private static final String NULL = "null";
+
     // valid values: user or client-app
     private static final String APIFEST_AUTH_TYPE = "apifest.auth.type";
 
@@ -89,19 +92,19 @@ public class Doclet {
 
     public static boolean start(RootDoc root) {
         mappingVersion = System.getProperty("mapping.version");
-        if(mappingVersion == null || mappingVersion.length() == 0 || "null".equals(mappingVersion)) {
+        if(mappingVersion == null || mappingVersion.isEmpty() || NULL.equals(mappingVersion)) {
             System.out.println("ERROR: mapping.version is not set");
             return false;
         }
 
         backendHost = System.getProperty("backend.host");
-        if(backendHost == null || backendHost.length() == 0) {
+        if(backendHost == null || backendHost.length() == 0 || NULL.equals(backendHost)) {
             System.out.println("ERROR: backend.host is not set");
             return false;
         }
 
         String backendPortStr = System.getProperty("backend.port");
-        if(backendPortStr == null || backendPortStr.length() == 0) {
+        if(backendPortStr == null || backendPortStr.length() == 0 || NULL.equals(backendPort)) {
             System.out.println("ERROR: backend.port is not set");
             return false;
         }
@@ -109,7 +112,7 @@ public class Doclet {
         try {
             backendPort = Integer.valueOf(backendPortStr);
         } catch (NumberFormatException e) {
-            System.out.println("ERROR: backendPort is not integer");
+            System.out.println("ERROR: backendPort is not an integer");
             return false;
         }
 
@@ -150,7 +153,7 @@ public class Doclet {
     }
 
     private static void generateMappingFile(String outputFile) throws JAXBException {
-        if(outputFile == null || outputFile.length() == 0 || "null".equals(outputFile)) {
+        if(outputFile == null || outputFile.length() == 0 || NULL.equals(outputFile)) {
             outputFile = String.format(DEFAULT_MAPPING_NAME, mappingVersion);
         }
         JAXBContext jaxbContext = JAXBContext.newInstance(Mapping.class);
@@ -175,7 +178,11 @@ public class Doclet {
 
             String internalEndpoint = getFirstTag(methodDoc, APIFEST_INTERNAL);
             if (internalEndpoint != null) {
-                endpoint.setInternalEndpoint(applicationPath + internalEndpoint);
+                if (applicationPath == null || applicationPath.isEmpty() || NULL.equals(applicationPath)) {
+                    endpoint.setInternalEndpoint(internalEndpoint);
+                } else {
+                    endpoint.setInternalEndpoint(applicationPath + internalEndpoint);
+                }
                 Matcher m = VAR_PATTERN.matcher(internalEndpoint);
                 int i = 1;
                 while(m.find()) {
