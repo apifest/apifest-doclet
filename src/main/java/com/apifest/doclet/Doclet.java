@@ -86,9 +86,9 @@ public class Doclet {
 
     private static final String NOT_SUPPORTED_VALUE = "value \"%s\" not supported for %s tag";
 
-    // GET, POST, PUT, DELETE, HEAD
+    // GET, POST, PUT, DELETE, HEAD, OPTIONS
     private static List<String> httpMethods = Arrays.asList("javax.ws.rs.GET", "javax.ws.rs.POST",
-            "javax.ws.rs.PUT", "javax.ws.rs.DELETE", "javax.ws.rs.HEAD");
+            "javax.ws.rs.PUT", "javax.ws.rs.DELETE", "javax.ws.rs.HEAD", "javax.ws.rs.OPTIONS");
 
     public static boolean start(RootDoc root) {
         mappingVersion = System.getProperty("mapping.version");
