@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.apifest</groupId>
   <artifactId>apifest-doclet</artifactId>
-  <version>0.1.1-SNAPSHOT</version>
+  <version>0.1.2-SNAPSHOT</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -11,6 +11,26 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-netty</artifactId>
+      <version>3.0.9.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-jackson2-provider</artifactId>
+      <version>3.0.9.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-client</artifactId>
+      <version>3.0.9.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1.1</version>
+    </dependency>
     <dependency>
       <groupId>com.sun</groupId>
       <artifactId>tools</artifactId>
@@ -21,7 +41,30 @@
     <dependency>
       <groupId>com.apifest</groupId>
       <artifactId>apifest-api</artifactId>
-      <version>0.1.1</version>
+      <version>0.1.2-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.module</groupId>
+      <artifactId>jackson-module-jaxb-annotations</artifactId>
+      <version>2.5.0</version>
+    </dependency>
+    <!-- Test Scope -->
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>6.8.21</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>2.0.2-beta</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.restfb</groupId>
+      <artifactId>restfb</artifactId>
+      <version>1.9.0</version>
     </dependency>
   </dependencies>
 

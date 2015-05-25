@@ -1,0 +1,84 @@
+package com.apifest.doclet.tests;
+
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+
+import org.json.simple.parser.ParseException;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import com.apifest.doclet.Doclet;
+
+public class DocletModeTest {
+    @BeforeMethod
+    public void setup() {
+        System.setProperty("sourcePath", "./src/test/java/com/apifest/doclet/tests/resources");
+        System.setProperty("mapping.version", "v1");
+        System.setProperty("mapping.filename", "all-mappings.xml");
+        System.setProperty("mapping.docs.filename", "all-mappings-docs.json");
+        System.setProperty("backend.host", "localhost");
+        System.setProperty("backend.port", "1212");
+        System.setProperty("application.path", "/");
+        System.setProperty("defaultActionClass", "com.all.mappings.DefaultMapping");
+        System.setProperty("defaultFilterClass", "com.all.mappings.DefaultFilter");
+
+    }
+
+    private void setMode(String mode) {
+        System.setProperty("mode", mode);
+    }
+
+    private void runDoclet(String mode) {
+        String filePath = "./src/test/java/com/apifest/doclet/tests/resources/ParsingResource.java";
+        Doclet doclet = new Doclet();
+        String[] args = new String[] { filePath };
+        setMode(mode);
+        Doclet.main(args);
+    }
+
+    private void findFile(String directory, String name, final String extension) {
+        File dir = new File(directory);
+
+        File[] files = dir.listFiles(new FilenameFilter() {
+            public boolean accept(File directory, String fileName) {
+                if (fileName.startsWith("all") && fileName.endsWith(extension)) {
+                    return true;
+                }
+                return false;
+            }
+        });
+        for (File f : files) {
+            Assert.assertEquals(name, f.getName());
+            f.deleteOnExit();
+        }
+    }
+
+    @AfterMethod
+    public void clearProperties() {
+        System.clearProperty("propertiesFilePath");
+    }
+
+    @Test
+    public void when_set_doclet_doc_mode() throws IOException, ParseException {
+        // WHEN
+        runDoclet("doc");
+        // Then
+        String name = "all-mappings-docs.json";
+        String directory = "./";
+        findFile(directory, name, ".json");
+    }
+
+    @Test
+    public void when_set_doclet_mapping_mode() throws IOException, ParseException {
+        // WHEN
+        runDoclet("mapping");
+        // Then
+        String name = "all-mappings.xml";
+        String directory = "./";
+        findFile(directory, name, ".xml");
+    }
+
+}
