@@ -17,6 +17,7 @@
 package com.apifest.doclet;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +35,13 @@ import com.apifest.api.Mapping.EndpointsWrapper;
 import com.apifest.api.MappingAction;
 import com.apifest.api.MappingEndpoint;
 import com.apifest.api.ResponseFilter;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.AnnotationIntrospector;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
 import com.sun.javadoc.AnnotationDesc;
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.MethodDoc;
@@ -75,6 +83,8 @@ public class Doclet {
     private static String outputFile;
 
     private static String applicationPath;
+
+    private static String mappingsFormat;
 
     // if no action is declared, use that
     private static String defaultActionClass;
@@ -124,6 +134,8 @@ public class Doclet {
 
         applicationPath = System.getProperty("application.path");
 
+        mappingsFormat = System.getProperty("mappings.format");
+
         System.out.println("Start ApiFest Doclet>>>>>>>>>>>>>>>>>>>");
         System.out.println("mapping.version is: " + System.getProperty("mapping.version"));
         System.out.println("backend.host: " + System.getProperty("backend.host"));
@@ -141,15 +153,43 @@ public class Doclet {
                 }
             }
 
-            generateMappingFile(outputFile);
-        } catch (JAXBException e) {
+            if ("json".equalsIgnoreCase(mappingsFormat)) {
+                generateJSONMappingFile(outputFile);
+            } else {
+                generateMappingFile(outputFile);
+            }
+        } catch (ParseException e) {
             System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
             return false;
-        } catch (ParseException e) {
+        } catch (JsonGenerationException e) {
+            System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
+            return false;
+        } catch (JsonMappingException e) {
+            System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
+            return false;
+        } catch (IOException e) {
+            System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
+            return false;
+        } catch (JAXBException e) {
             System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
             return false;
         }
         return true;
+    }
+
+    private static void generateJSONMappingFile(String outputFile) throws JsonGenerationException, JsonMappingException, IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        AnnotationIntrospector introspector = new JaxbAnnotationIntrospector(TypeFactory.defaultInstance());
+        mapper.setAnnotationIntrospector(introspector);
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+
+        Mapping mapping = new Mapping();
+        mapping.setVersion(mappingVersion);
+        mapping.setBackend(new Backend(backendHost, backendPort));
+        EndpointsWrapper ends = new EndpointsWrapper();
+        ends.setEndpoints(endpoints);
+        mapping.setEndpointsWrapper(ends);
+        mapper.writeValue(new File(outputFile), mapping);
     }
 
     private static void generateMappingFile(String outputFile) throws JAXBException {
