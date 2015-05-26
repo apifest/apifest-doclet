@@ -96,6 +96,8 @@ public class Doclet {
 
     // if no filter is declared, use that
     private static String defaultFilterClass;
+    
+    private static String mode;
 
     private static final String DEFAULT_MAPPING_NAME = "output_mapping_%s.xml";
 
@@ -337,6 +339,10 @@ public class Doclet {
         String sourcePath = System.getProperty("sourcePath");
         if (sourcePath == null || sourcePath.isEmpty()) {
             throw new IllegalArgumentException("sourcePath is invalid.");
+        }
+        String mode = System.getProperty("mode");
+        if (mode == null || mode.isEmpty()) {
+            throw new IllegalArgumentException("mode is invalid.");
         }
         String[] argsDoclet = new String[] { "-doclet", Doclet.class.getName(), "-sourcepath", sourcePath };
         List<String> arguments = new ArrayList<String>();
