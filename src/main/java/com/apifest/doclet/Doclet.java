@@ -1,27 +1,31 @@
 /*
-* Copyright 2013-2014, ApiFest project
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2013-2014, ApiFest project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.apifest.doclet;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,8 +53,8 @@ import com.sun.javadoc.RootDoc;
 import com.sun.javadoc.Tag;
 
 /**
- * Parse Javadoc tags and create output mapping file.
- * HTTP methods are extracted from JAX-RS annotations.
+ * Parse Javadoc tags and create output mapping file. HTTP methods are extracted
+ * from JAX-RS annotations.
  *
  * @author Rossitsa Borissova
  */
@@ -66,7 +70,8 @@ public class Doclet {
     private static final String APIFEST_BACKEND_PORT = "apifest.backend.port";
     private static final Pattern VAR_PATTERN = Pattern.compile("(\\{)(\\w*-?_?\\w*)(\\})");
 
-    // returned when a variable is missing in the properties file and then passed to the Doclet as env variable
+    // returned when a variable is missing in the properties file and then
+    // passed to the Doclet as env variable
     private static final String NULL = "null";
 
     // valid values: user or client-app
@@ -97,24 +102,36 @@ public class Doclet {
     private static final String NOT_SUPPORTED_VALUE = "value \"%s\" not supported for %s tag";
 
     // GET, POST, PUT, DELETE, HEAD, OPTIONS
-    private static List<String> httpMethods = Arrays.asList("javax.ws.rs.GET", "javax.ws.rs.POST",
-            "javax.ws.rs.PUT", "javax.ws.rs.DELETE", "javax.ws.rs.HEAD", "javax.ws.rs.OPTIONS");
+    private static List<String> httpMethods = Arrays.asList("javax.ws.rs.GET", "javax.ws.rs.POST", "javax.ws.rs.PUT", "javax.ws.rs.DELETE", "javax.ws.rs.HEAD",
+            "javax.ws.rs.OPTIONS");
+
+    /**
+     * Starts the doclet from the command line.
+     * 
+     * @param args
+     *            List of all the packages.
+     */
+    public static void main(String[] args) {
+        Doclet.cofigureDocletProperties();
+        String[] docletArgs = Doclet.getDocletArgs(args);
+        com.sun.tools.javadoc.Main.execute(docletArgs);
+    }
 
     public static boolean start(RootDoc root) {
         mappingVersion = System.getProperty("mapping.version");
-        if(mappingVersion == null || mappingVersion.isEmpty() || NULL.equals(mappingVersion)) {
+        if (mappingVersion == null || mappingVersion.isEmpty() || NULL.equals(mappingVersion)) {
             System.out.println("ERROR: mapping.version is not set");
             return false;
         }
 
         backendHost = System.getProperty("backend.host");
-        if(backendHost == null || backendHost.length() == 0 || NULL.equals(backendHost)) {
+        if (backendHost == null || backendHost.length() == 0 || NULL.equals(backendHost)) {
             System.out.println("ERROR: backend.host is not set");
             return false;
         }
 
         String backendPortStr = System.getProperty("backend.port");
-        if(backendPortStr == null || backendPortStr.length() == 0 || NULL.equals(backendPort)) {
+        if (backendPortStr == null || backendPortStr.length() == 0 || NULL.equals(backendPort)) {
             System.out.println("ERROR: backend.port is not set");
             return false;
         }
@@ -147,7 +164,7 @@ public class Doclet {
                 MethodDoc[] mDocs = clazz.methods();
                 for (MethodDoc doc : mDocs) {
                     MappingEndpoint endpoint = getMappingEndpoint(doc);
-                    if(endpoint != null) {
+                    if (endpoint != null) {
                         endpoints.add(endpoint);
                     }
                 }
@@ -193,7 +210,7 @@ public class Doclet {
     }
 
     private static void generateMappingFile(String outputFile) throws JAXBException {
-        if(outputFile == null || outputFile.length() == 0 || NULL.equals(outputFile)) {
+        if (outputFile == null || outputFile.length() == 0 || NULL.equals(outputFile)) {
             outputFile = String.format(DEFAULT_MAPPING_NAME, mappingVersion);
         }
         JAXBContext jaxbContext = JAXBContext.newInstance(Mapping.class);
@@ -212,7 +229,7 @@ public class Doclet {
         MappingEndpoint endpoint = null;
 
         String externalEndpoint = getFirstTag(methodDoc, APIFEST_EXTERNAL);
-        if(externalEndpoint != null){
+        if (externalEndpoint != null) {
             endpoint = new MappingEndpoint();
             endpoint.setExternalEndpoint("/" + mappingVersion + externalEndpoint);
 
@@ -225,17 +242,18 @@ public class Doclet {
                 }
                 Matcher m = VAR_PATTERN.matcher(internalEndpoint);
                 int i = 1;
-                while(m.find()) {
+                while (m.find()) {
                     String varName = m.group(2);
 
-                    //get RE if any var in internal path
+                    // get RE if any var in internal path
                     String varExpression = getFirstTag(methodDoc, APIFEST_RE + varName);
-                    if(varExpression != null) {
+                    if (varExpression != null) {
                         if (endpoint.getVarName() == null) {
                             endpoint.setVarName(varName);
                             endpoint.setVarExpression(varExpression);
                         } else {
-                            // add current varName and varExpression with SPACE before that
+                            // add current varName and varExpression with SPACE
+                            // before that
                             endpoint.setVarName(endpoint.getVarName() + " " + varName);
                             endpoint.setVarExpression(endpoint.getVarExpression() + " " + varExpression);
                         }
@@ -266,7 +284,7 @@ public class Doclet {
                 ResponseFilter filter = new ResponseFilter();
                 filter.setFilterClassName(filtersTag);
                 endpoint.setFilters(filter);
-            }  else {
+            } else {
                 if (defaultFilterClass != null) {
                     ResponseFilter filter = new ResponseFilter();
                     filter.setFilterClassName(defaultFilterClass);
@@ -275,8 +293,8 @@ public class Doclet {
             }
 
             String authType = getFirstTag(methodDoc, APIFEST_AUTH_TYPE);
-            if(authType != null) {
-                if(MappingEndpoint.AUTH_TYPE_USER.equals(authType) || MappingEndpoint.AUTH_TYPE_CLIENT_APP.equals(authType)) {
+            if (authType != null) {
+                if (MappingEndpoint.AUTH_TYPE_USER.equals(authType) || MappingEndpoint.AUTH_TYPE_CLIENT_APP.equals(authType)) {
                     endpoint.setAuthType(authType);
                 } else {
                     String errorMsg = String.format(NOT_SUPPORTED_VALUE, authType, APIFEST_AUTH_TYPE);
@@ -286,14 +304,15 @@ public class Doclet {
 
             String endpointBackendHost = getFirstTag(methodDoc, APIFEST_BACKEND_HOST);
             String endpointBackendPort = getFirstTag(methodDoc, APIFEST_BACKEND_PORT);
-            if(endpointBackendHost != null && endpointBackendPort != null) {
-               try {
-                   int port = Integer.valueOf(endpointBackendPort);
-                   endpoint.setBackendHost(endpointBackendHost);
-                   endpoint.setBackendPort(port);
-               } catch (NumberFormatException e) {
-                   System.out.println("ERROR: apifest.backend.port " + endpoint.getExternalEndpoint() + " for endpoint is not valid, " +  "default backend host and port will be used");
-               }
+            if (endpointBackendHost != null && endpointBackendPort != null) {
+                try {
+                    int port = Integer.valueOf(endpointBackendPort);
+                    endpoint.setBackendHost(endpointBackendHost);
+                    endpoint.setBackendPort(port);
+                } catch (NumberFormatException e) {
+                    System.out.println("ERROR: apifest.backend.port " + endpoint.getExternalEndpoint() + " for endpoint is not valid, "
+                            + "default backend host and port will be used");
+                }
             }
 
             AnnotationDesc[] annotations = methodDoc.annotations();
@@ -313,4 +332,50 @@ public class Doclet {
         }
         return null;
     }
+
+    private static String[] getDocletArgs(String[] inputArgs) {
+        String sourcePath = System.getProperty("sourcePath");
+        if (sourcePath == null || sourcePath.isEmpty()) {
+            throw new IllegalArgumentException("sourcePath is invalid.");
+        }
+        String[] argsDoclet = new String[] { "-doclet", Doclet.class.getName(), "-sourcepath", sourcePath };
+        List<String> arguments = new ArrayList<String>();
+        arguments.addAll(Arrays.asList(inputArgs));
+        arguments.addAll(Arrays.asList(argsDoclet));
+        return arguments.toArray(new String[arguments.size()]);
+    }
+
+    private static void cofigureDocletProperties() {
+        String propertiesFilePath = System.getProperty("propertiesFilePath");
+        if (propertiesFilePath == null || propertiesFilePath.isEmpty()) {
+            throw new IllegalArgumentException("propertiesFilePath is invalid.");
+        }
+        Properties docletProps = Doclet.loadDocletProperties(propertiesFilePath);
+        Enumeration<?> e = docletProps.propertyNames();
+        while (e.hasMoreElements()) {
+            String key = (String) e.nextElement();
+            System.setProperty(key, docletProps.getProperty(key));
+        }
+    }
+
+    private static Properties loadDocletProperties(String filePath) {
+        Properties props = new Properties();
+        InputStream input = null;
+        try {
+            input = new FileInputStream(filePath);
+            props.load(input);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return props;
+    }
+
 }
