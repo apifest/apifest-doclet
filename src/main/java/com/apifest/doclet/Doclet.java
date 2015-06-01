@@ -225,113 +225,19 @@ public class Doclet {
             mappingEndpoint.setExternalEndpoint("/" + mappingVersion + externalEndpoint);
             mappingEndpointDocumentation.setEndpoint("/" + mappingVersion + externalEndpoint);
 
-            String internalEndpoint = getFirstTag(methodDoc, APIFEST_INTERNAL);
-            if (internalEndpoint != null) {
-                if (applicationPath == null || applicationPath.isEmpty() || NULL.equals(applicationPath)) {
-                    mappingEndpoint.setInternalEndpoint(internalEndpoint);
-                } else {
-                    mappingEndpoint.setInternalEndpoint(applicationPath + internalEndpoint);
-                }
-                Matcher m = VAR_PATTERN.matcher(internalEndpoint);
-                while (m.find()) {
-                    String varName = m.group(2);
-                    // get RE if any var in internal path
-                    String varExpression = getFirstTag(methodDoc, APIFEST_RE + varName);
-                    if (varExpression != null) {
-                        if (mappingEndpoint.getVarName() == null) {
-                            mappingEndpoint.setVarName(varName);
-                            mappingEndpoint.setVarExpression(varExpression);
-                        } else {
-                            // add current varName and varExpression with SPACE
-                            // before that
-                            mappingEndpoint.setVarName(mappingEndpoint.getVarName() + " " + varName);
-                            mappingEndpoint.setVarExpression(mappingEndpoint.getVarExpression() + " " + varExpression);
-                        }
-                    }
-                }
-            }
-
-            String docsGroup = getFirstTag(methodDoc, APIFEST_DOCS_GROUP);
-            if (docsGroup != null) {
-                mappingEndpointDocumentation.setGroup(docsGroup);
-            }
-
-            String docsSummary = getFirstTag(methodDoc, APIFEST_DOCS_SUMMARY);
-            if (docsSummary != null) {
-                mappingEndpointDocumentation.setSummary(docsSummary);
-            }
-
-            String docsDecsription = getFirstTag(methodDoc, APIFEST_DOCS_DESCRIPTION);
-            if (docsDecsription != null) {
-                mappingEndpointDocumentation.setDescription(docsDecsription);
-            }
-
-            String scope = getFirstTag(methodDoc, APIFEST_SCOPE);
-            if (scope != null) {
-                mappingEndpoint.setScope(scope);
-                mappingEndpointDocumentation.setScope(scope);
-            }
-
-            String actionsTag = getFirstTag(methodDoc, APIFEST_ACTION);
-            if (actionsTag != null) {
-                MappingAction action = new MappingAction();
-                action.setActionClassName(actionsTag);
-                mappingEndpoint.setAction(action);
-            } else {
-                if (defaultActionClass != null) {
-                    MappingAction action = new MappingAction();
-                    action.setActionClassName(defaultActionClass);
-                    mappingEndpoint.setAction(action);
-                }
-            }
-
-            String filtersTag = getFirstTag(methodDoc, APIFEST_FILTER);
-            if (filtersTag != null) {
-                ResponseFilter filter = new ResponseFilter();
-                filter.setFilterClassName(filtersTag);
-                mappingEndpoint.setFilters(filter);
-            } else {
-                if (defaultFilterClass != null) {
-                    ResponseFilter filter = new ResponseFilter();
-                    filter.setFilterClassName(defaultFilterClass);
-                    mappingEndpoint.setFilters(filter);
-                }
-            }
-
-            String authType = getFirstTag(methodDoc, APIFEST_AUTH_TYPE);
-            if (authType != null) {
-                if (MappingEndpoint.AUTH_TYPE_USER.equals(authType) || MappingEndpoint.AUTH_TYPE_CLIENT_APP.equals(authType)) {
-                    mappingEndpoint.setAuthType(authType);
-                } else {
-                    throw new ParseException(String.format(NOT_SUPPORTED_VALUE, authType, APIFEST_AUTH_TYPE), 0);
-                }
-            }
-
-            String endpointBackendHost = getFirstTag(methodDoc, APIFEST_BACKEND_HOST);
-            String endpointBackendPort = getFirstTag(methodDoc, APIFEST_BACKEND_PORT);
-            if (endpointBackendHost != null && endpointBackendPort != null) {
-                try {
-                    int port = Integer.valueOf(endpointBackendPort);
-                    mappingEndpoint.setBackendHost(endpointBackendHost);
-                    mappingEndpoint.setBackendPort(port);
-                } catch (NumberFormatException e) {
-                    System.out.println("ERROR: apifest.backend.port " + mappingEndpoint.getExternalEndpoint() + " for endpoint is not valid, "
-                            + "default backend host and port will be used");
-                }
-            }
-
-            AnnotationDesc[] annotations = methodDoc.annotations();
-            for (AnnotationDesc a : annotations) {
-                if (a != null && (httpMethods.contains(a.annotationType().name()))) {
-                    String annotationTypeName = a.annotationType().name();
-                    mappingEndpoint.setMethod(annotationTypeName);
-                    mappingEndpointDocumentation.setMethod(annotationTypeName);
-                }
-            }
+            parseInternalEndpointTag(methodDoc, mappingEndpoint);
+            parseDocsGroupTag(methodDoc, mappingEndpointDocumentation);
+            parseDocsSummaryTap(methodDoc, mappingEndpointDocumentation);
+            parseDocsDescriptionTag(methodDoc, mappingEndpointDocumentation);
+            parseScopeTag(methodDoc, mappingEndpoint, mappingEndpointDocumentation);
+            parseActionTag(methodDoc, mappingEndpoint);
+            parseFilterTag(methodDoc, mappingEndpoint);
+            parseAuthTypeTag(methodDoc, mappingEndpoint);
+            parseEndpointBackendTags(methodDoc, mappingEndpoint);
+            parseMethodAnnotations(methodDoc, mappingEndpoint, mappingEndpointDocumentation);
         }
 
         if (parsed != null) {
-
             if (mappingEndpoint != null) {
                 parsed.setMappingEndpoint(mappingEndpoint);
             }
@@ -341,6 +247,130 @@ public class Doclet {
         }
 
         return parsed;
+    }
+
+    private static void parseMethodAnnotations(MethodDoc methodDoc, MappingEndpoint mappingEndpoint, MappingEndpointDocumentation mappingEndpointDocumentation) {
+        AnnotationDesc[] annotations = methodDoc.annotations();
+        for (AnnotationDesc a : annotations) {
+            if (a != null && (httpMethods.contains(a.annotationType().name()))) {
+                String annotationTypeName = a.annotationType().name();
+                mappingEndpoint.setMethod(annotationTypeName);
+                mappingEndpointDocumentation.setMethod(annotationTypeName);
+            }
+        }
+    }
+
+    private static void parseEndpointBackendTags(MethodDoc methodDoc, MappingEndpoint mappingEndpoint) {
+        String endpointBackendHost = getFirstTag(methodDoc, APIFEST_BACKEND_HOST);
+        String endpointBackendPort = getFirstTag(methodDoc, APIFEST_BACKEND_PORT);
+        if (endpointBackendHost != null && endpointBackendPort != null) {
+            try {
+                int port = Integer.valueOf(endpointBackendPort);
+                mappingEndpoint.setBackendHost(endpointBackendHost);
+                mappingEndpoint.setBackendPort(port);
+            } catch (NumberFormatException e) {
+                System.out.println("ERROR: apifest.backend.port " + mappingEndpoint.getExternalEndpoint() + " for endpoint is not valid, "
+                        + "default backend host and port will be used");
+            }
+        }
+    }
+
+    private static void parseAuthTypeTag(MethodDoc methodDoc, MappingEndpoint mappingEndpoint) throws ParseException {
+        String authType = getFirstTag(methodDoc, APIFEST_AUTH_TYPE);
+        if (authType != null) {
+            if (MappingEndpoint.AUTH_TYPE_USER.equals(authType) || MappingEndpoint.AUTH_TYPE_CLIENT_APP.equals(authType)) {
+                mappingEndpoint.setAuthType(authType);
+            } else {
+                throw new ParseException(String.format(NOT_SUPPORTED_VALUE, authType, APIFEST_AUTH_TYPE), 0);
+            }
+        }
+    }
+
+    private static void parseFilterTag(MethodDoc methodDoc, MappingEndpoint mappingEndpoint) {
+        String filtersTag = getFirstTag(methodDoc, APIFEST_FILTER);
+        if (filtersTag != null) {
+            ResponseFilter filter = new ResponseFilter();
+            filter.setFilterClassName(filtersTag);
+            mappingEndpoint.setFilters(filter);
+        } else {
+            if (defaultFilterClass != null) {
+                ResponseFilter filter = new ResponseFilter();
+                filter.setFilterClassName(defaultFilterClass);
+                mappingEndpoint.setFilters(filter);
+            }
+        }
+    }
+
+    private static void parseActionTag(MethodDoc methodDoc, MappingEndpoint mappingEndpoint) {
+        String actionsTag = getFirstTag(methodDoc, APIFEST_ACTION);
+        if (actionsTag != null) {
+            MappingAction action = new MappingAction();
+            action.setActionClassName(actionsTag);
+            mappingEndpoint.setAction(action);
+        } else {
+            if (defaultActionClass != null) {
+                MappingAction action = new MappingAction();
+                action.setActionClassName(defaultActionClass);
+                mappingEndpoint.setAction(action);
+            }
+        }
+    }
+
+    private static void parseScopeTag(MethodDoc methodDoc, MappingEndpoint mappingEndpoint, MappingEndpointDocumentation mappingEndpointDocumentation) {
+        String scope = getFirstTag(methodDoc, APIFEST_SCOPE);
+        if (scope != null) {
+            mappingEndpoint.setScope(scope);
+            mappingEndpointDocumentation.setScope(scope);
+        }
+    }
+
+    private static void parseDocsDescriptionTag(MethodDoc methodDoc, MappingEndpointDocumentation mappingEndpointDocumentation) {
+        String docsDecsription = getFirstTag(methodDoc, APIFEST_DOCS_DESCRIPTION);
+        if (docsDecsription != null) {
+            mappingEndpointDocumentation.setDescription(docsDecsription);
+        }
+    }
+
+    private static void parseDocsSummaryTap(MethodDoc methodDoc, MappingEndpointDocumentation mappingEndpointDocumentation) {
+        String docsSummary = getFirstTag(methodDoc, APIFEST_DOCS_SUMMARY);
+        if (docsSummary != null) {
+            mappingEndpointDocumentation.setSummary(docsSummary);
+        }
+    }
+
+    private static void parseDocsGroupTag(MethodDoc methodDoc, MappingEndpointDocumentation mappingEndpointDocumentation) {
+        String docsGroup = getFirstTag(methodDoc, APIFEST_DOCS_GROUP);
+        if (docsGroup != null) {
+            mappingEndpointDocumentation.setGroup(docsGroup);
+        }
+    }
+
+    private static void parseInternalEndpointTag(MethodDoc methodDoc, MappingEndpoint mappingEndpoint) {
+        String internalEndpoint = getFirstTag(methodDoc, APIFEST_INTERNAL);
+        if (internalEndpoint != null) {
+            if (applicationPath == null || applicationPath.isEmpty() || NULL.equals(applicationPath)) {
+                mappingEndpoint.setInternalEndpoint(internalEndpoint);
+            } else {
+                mappingEndpoint.setInternalEndpoint(applicationPath + internalEndpoint);
+            }
+            Matcher m = VAR_PATTERN.matcher(internalEndpoint);
+            while (m.find()) {
+                String varName = m.group(2);
+                // get RE if any var in internal path
+                String varExpression = getFirstTag(methodDoc, APIFEST_RE + varName);
+                if (varExpression != null) {
+                    if (mappingEndpoint.getVarName() == null) {
+                        mappingEndpoint.setVarName(varName);
+                        mappingEndpoint.setVarExpression(varExpression);
+                    } else {
+                        // add current varName and varExpression with SPACE
+                        // before that
+                        mappingEndpoint.setVarName(mappingEndpoint.getVarName() + " " + varName);
+                        mappingEndpoint.setVarExpression(mappingEndpoint.getVarExpression() + " " + varExpression);
+                    }
+                }
+            }
+        }
     }
 
     private static void generateDocsFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws JsonGenerationException, JsonMappingException,
