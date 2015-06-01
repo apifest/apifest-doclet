@@ -383,7 +383,10 @@ public class Doclet {
         MappingDocumentation mappingDocs = new MappingDocumentation();
         List<MappingEndpointDocumentation> endpoints = new ArrayList<MappingEndpointDocumentation>();
         for (ParsedEndpoint parsed : parsedEndpoints) {
-            endpoints.add(parsed.getMappingEndpointDocumentation());
+            MappingEndpointDocumentation endpoint = parsed.getMappingEndpointDocumentation();
+            if (endpoint != null) {
+                endpoints.add(endpoint);
+            }
         }
         mappingDocs.setVersion(mappingVersion);
         mappingDocs.setMappingEndpontDocumentation(endpoints);
@@ -403,7 +406,10 @@ public class Doclet {
         EndpointsWrapper ends = new EndpointsWrapper();
         List<MappingEndpoint> endpoints = new ArrayList<MappingEndpoint>();
         for (ParsedEndpoint parsed : parsedEndpoints) {
-            endpoints.add(parsed.getMappingEndpoint());
+            MappingEndpoint endpoint = parsed.getMappingEndpoint();
+            if (endpoint != null) {
+                endpoints.add(endpoint);
+            }
         }
         ends.setEndpoints(endpoints);
         mapping.setEndpointsWrapper(ends);
