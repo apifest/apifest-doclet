@@ -31,13 +31,13 @@ ApiFest Doclet requires the following environment variables:
 
 For both modes:
 
-- mode - the Doclet support two modes in the moment ("mapping" and "doc").
+- mode - the Doclet support two modes in the moment ("mapping" and "doc").They can be comma separated.
 - mapping.version - the version your API will be exposed externally;
-- mapping.filename - the name of the mapping configuration file that will be generated;
 - application.path - the application path used to obtain all application resources, it will be preprended to each internal path;
 
 Only for the Doclet "mapping" mode:
 
+- mapping.filename - the name of the mapping configuration file that will be generated;
 - backend.host - the host(your API is running on) where requests should be translated to;
 - backend.port - the port of the backend.host;
 - defaultActionClass - the fully qualified action class that will be added if no action is declared in Javadoc annotations;
