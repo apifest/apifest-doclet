@@ -24,8 +24,10 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -100,7 +102,7 @@ public class Doclet {
     // if no filter is declared, use that
     private static String defaultFilterClass;
 
-    private static DocletMode docletMode;
+    private static Set<DocletMode> docletMode = new HashSet<DocletMode>();
 
     private static final String DEFAULT_MAPPING_NAME = "output_mapping_%s.xml";
 
@@ -144,13 +146,11 @@ public class Doclet {
                     }
                 }
             }
-            switch (docletMode) {
-            case DOC:
+            if (docletMode.contains(DocletMode.DOC)) {
                 generateDocsFile(parsedEndpoints, mappingDocsOutputFile);
-                break;
-            default:
+            }
+            if (docletMode.contains(DocletMode.MAPPING)) {
                 generateMappingFile(parsedEndpoints, mappingOutputFile);
-                break;
             }
             return true;
         } catch (ParseException e) {
@@ -172,16 +172,23 @@ public class Doclet {
     }
 
     private static void validateConfiguration() {
-        String mode = System.getProperty("mode");
-        docletMode = DocletMode.fromString(mode);
-        if (docletMode == null) {
+        String modeInput = System.getProperty("mode");
+        if (modeInput == null) {
             throw new IllegalArgumentException("mode is invalid.");
+        }
+        String[] modesSplit = modeInput.split(",");
+        for (String modeSplit : modesSplit) {
+            DocletMode mode = DocletMode.fromString(modeSplit);
+            if (mode == null) {
+                throw new IllegalArgumentException("One of the modes you have specified is invalid: " + modeSplit);
+            }
+            docletMode.add(mode);
         }
         mappingVersion = System.getProperty("mapping.version");
         if (mappingVersion == null || mappingVersion.isEmpty() || NULL.equals(mappingVersion)) {
             throw new IllegalArgumentException("mapping.version is not set.");
         }
-        if (docletMode == DocletMode.MAPPING) {
+        if (docletMode.contains(DocletMode.MAPPING)) {
             backendHost = System.getProperty("backend.host");
             if (backendHost == null || backendHost.length() == 0 || NULL.equals(backendHost)) {
                 throw new IllegalArgumentException("backend.host is not set.");
@@ -200,11 +207,11 @@ public class Doclet {
             defaultFilterClass = System.getProperty("defaultFilterClass");
         }
         mappingOutputFile = System.getProperty("mapping.filename");
-        if (docletMode == DocletMode.MAPPING && (mappingOutputFile == null || mappingOutputFile.isEmpty())) {
+        if (docletMode.contains(DocletMode.MAPPING) && (mappingOutputFile == null || mappingOutputFile.isEmpty())) {
             throw new IllegalArgumentException("the mappings output file must be provided.");
         }
         mappingDocsOutputFile = System.getProperty("mapping.docs.filename");
-        if (docletMode == DocletMode.DOC && (mappingDocsOutputFile == null || mappingDocsOutputFile.isEmpty())) {
+        if (docletMode.contains(DocletMode.DOC) && (mappingDocsOutputFile == null || mappingDocsOutputFile.isEmpty())) {
             throw new IllegalArgumentException("the mappings docs output file must be provided.");
         }
         applicationPath = System.getProperty("application.path");
