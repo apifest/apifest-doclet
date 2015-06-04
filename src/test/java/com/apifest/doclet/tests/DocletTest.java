@@ -46,8 +46,11 @@ public class DocletTest {
 
     @Test
     public void when_doclet_run_outputs_tags() throws IOException, ParseException {
+//      GIVEN
         String parserFilePath = "./komfo-mappings-docs.json";
+//      WHEN
         runDoclet();
+//      THEN
         JSONParser parser = new JSONParser();
         FileReader fileReader = null;
         try {
@@ -83,9 +86,11 @@ public class DocletTest {
 
     @Test
     public void check_whether_json_file_will_generate_unsupported_tags() throws IOException, ParseException {
-        // Then
+//        GIVEN
         String parserFilePath = "./komfo-mappings-docs.json";
+//        WHEN
         runDoclet();
+//        THEN
         JSONParser parser = new JSONParser();
         FileReader fileReader = null;
         try {
@@ -106,8 +111,11 @@ public class DocletTest {
 
     @Test
     public void check_what_doclet_will_generate_when_resource_file_not_exist() throws Exception {
+//        GIVEN
         String parserFilePath = "./komfo-mappings-docs.json";
+//        WHEN
         runDoclet();
+//        THEN
         JSONParser parser = new JSONParser();
         FileReader fileReader = null;
         try {
