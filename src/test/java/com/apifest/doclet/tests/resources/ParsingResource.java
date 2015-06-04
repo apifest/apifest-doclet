@@ -23,6 +23,7 @@ public interface ParsingResource {
      * @apifest.re.platform \S+
      * @apifest.docs.group Twitter Followers
      * @return Response
+     * @test this is any test annotation
      */
     @Path("/metrics")
     @GET
@@ -49,6 +50,9 @@ public interface ParsingResource {
      * @apifest.docs.summary Short summary goes here
      * @apifest.docs.description Long description goes here Long description goes hereLong description goes here Long description goes hereLong description goes here Long description goes hereLong description goes here Long description goes hereLong description goes here Long description goes hereLong description goes here Long description goes hereLong description goes here Long description goes hereLong description goes here Long description goes hereLong description goes here Long description goes here
      * @return Response
+     * @test2 this is annotation for testing purpose
+     * #wrongtag
+     * @@wrongtag
      */
     @Path("/stream")
     @GET
