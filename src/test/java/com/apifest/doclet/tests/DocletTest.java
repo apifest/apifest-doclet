@@ -18,8 +18,8 @@ import com.apifest.doclet.Doclet;
 public class DocletTest {
     @BeforeMethod
     public void setup() {
-        System.setProperty("sourcePath", "../apifest-doclet/src/test/java/com/apifest/doclet/tests/resources");
-        System.setProperty("propertiesFilePath", "../apifest-doclet/src/test/java/com/apifest/doclet/tests/resources/project.properties");
+        System.setProperty("sourcePath", "./src/test/java/com/apifest/doclet/tests/resources");
+        System.setProperty("propertiesFilePath", "./src/test/java/com/apifest/doclet/tests/resources/project.properties");
         System.setProperty("mode", "doc");
 
     }
@@ -32,7 +32,7 @@ public class DocletTest {
     }
 
     private void runDoclet() {
-        String filePath = "../apifest-doclet/src/test/java/com/apifest/doclet/tests/resources/ParsingResource.java";
+        String filePath = "./src/test/java/com/apifest/doclet/tests/resources/ParsingResource.java";
         Doclet doclet = new Doclet();
         String[] args = new String[] { filePath };
         Doclet.main(args);
@@ -46,7 +46,7 @@ public class DocletTest {
 
     @Test
     public void when_doclet_run_outputs_tags() throws IOException, ParseException {
-        String parserFilePath = "../apifest-doclet/komfo-mappings-docs.json";
+        String parserFilePath = "./komfo-mappings-docs.json";
         runDoclet();
         JSONParser parser = new JSONParser();
         FileReader fileReader = null;
@@ -84,7 +84,7 @@ public class DocletTest {
     @Test
     public void check_whether_json_file_will_generate_unsupported_tags() throws IOException, ParseException {
         // Then
-        String parserFilePath = "../apifest-doclet/komfo-mappings-docs.json";
+        String parserFilePath = "./komfo-mappings-docs.json";
         runDoclet();
         JSONParser parser = new JSONParser();
         FileReader fileReader = null;
@@ -106,7 +106,7 @@ public class DocletTest {
 
     @Test
     public void check_what_doclet_will_generate_when_resource_file_not_exist() throws Exception {
-        String parserFilePath = "../apifest-doclet/komfo-mappings-docs.json";
+        String parserFilePath = "./komfo-mappings-docs.json";
         runDoclet();
         JSONParser parser = new JSONParser();
         FileReader fileReader = null;
