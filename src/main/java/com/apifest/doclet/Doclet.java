@@ -117,8 +117,10 @@ public class Doclet {
      * @param args
      *            List of all the packages that need to be processed.
      */
-    public static void main(String[] args) {
-        Doclet.cofigureDocletProperties();
+    public static void main(String[] args, boolean usePropertiesFileConfiguration) {
+        if (usePropertiesFileConfiguration) {
+            Doclet.cofigureDocletProperties();
+        }
         String[] docletArgs = Doclet.getDocletArgs(args);
         com.sun.tools.javadoc.Main.execute(docletArgs);
     }
@@ -380,8 +382,7 @@ public class Doclet {
         }
     }
 
-    private static void generateDocsFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws JsonGenerationException, JsonMappingException,
-            IOException {
+    private static void generateDocsFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws JsonGenerationException, JsonMappingException, IOException {
         ObjectMapper mapper = new ObjectMapper();
         AnnotationIntrospector introspector = new JaxbAnnotationIntrospector(TypeFactory.defaultInstance());
         mapper.setAnnotationIntrospector(introspector);

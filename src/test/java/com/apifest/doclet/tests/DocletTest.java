@@ -21,7 +21,14 @@ public class DocletTest {
         System.setProperty("sourcePath", "./src/test/java/com/apifest/doclet/tests/resources");
         System.setProperty("propertiesFilePath", "./src/test/java/com/apifest/doclet/tests/resources/project.properties");
         System.setProperty("mode", "doc");
-
+        System.setProperty("mapping.version", "v1");
+        System.setProperty("mapping.filename", "komfo-mappings.xml");
+        System.setProperty("mapping.docs.filename", "komfo-mappings-docs.json");
+        System.setProperty("backend.host", "localhost");
+        System.setProperty("backend.port", "1212");
+        System.setProperty(" application.path", "/");
+        System.setProperty("defaultActionClass", "com.komfo.mappings.DefaultMapping");
+        System.setProperty("defaultFilterClass", "com.komfo.mappings.DefaultFilter");
     }
 
     private void deleteJsonFile(String path) {
@@ -35,7 +42,7 @@ public class DocletTest {
         String filePath = "./src/test/java/com/apifest/doclet/tests/resources/ParsingResource.java";
         Doclet doclet = new Doclet();
         String[] args = new String[] { filePath };
-        Doclet.main(args);
+        Doclet.main(args, false);
 
     }
 
@@ -46,11 +53,11 @@ public class DocletTest {
 
     @Test
     public void when_doclet_run_outputs_tags() throws IOException, ParseException {
-//      GIVEN
+        // GIVEN
         String parserFilePath = "./komfo-mappings-docs.json";
-//      WHEN
+        // WHEN
         runDoclet();
-//      THEN
+        // THEN
         JSONParser parser = new JSONParser();
         FileReader fileReader = null;
         try {
@@ -86,11 +93,11 @@ public class DocletTest {
 
     @Test
     public void check_whether_json_file_will_generate_unsupported_tags() throws IOException, ParseException {
-//        GIVEN
+        // GIVEN
         String parserFilePath = "./komfo-mappings-docs.json";
-//        WHEN
+        // WHEN
         runDoclet();
-//        THEN
+        // THEN
         JSONParser parser = new JSONParser();
         FileReader fileReader = null;
         try {
@@ -110,12 +117,12 @@ public class DocletTest {
     }
 
     @Test
-    public void check_what_doclet_will_generate_when_resource_file_not_exist() throws Exception {
-//        GIVEN
+    public void check_what_doclet_will_generate_when_tags_are_wrong() throws Exception {
+        // GIVEN
         String parserFilePath = "./komfo-mappings-docs.json";
-//        WHEN
+        // WHEN
         runDoclet();
-//        THEN
+        // THEN
         JSONParser parser = new JSONParser();
         FileReader fileReader = null;
         try {
