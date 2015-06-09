@@ -11,6 +11,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.apifest.doclet.Doclet;
+import java.util.Arrays;
 
 public class DocletModeTest {
     @BeforeMethod
@@ -52,9 +53,6 @@ public class DocletModeTest {
             }
         });
         for (File f : files) {
-            System.out.println(f.getName());
-            System.out.println("==============");
-            System.out.println(name);
             Assert.assertEquals(name, f.getName());
             f.deleteOnExit();
         }
@@ -67,8 +65,6 @@ public class DocletModeTest {
 
     @Test
     public void when_set_doclet_doc_mode() throws IOException, ParseException {
-        // GIVEN
-        // setMode("doc");
         // WHEN
         runDoclet("doc");
         // Then
@@ -79,8 +75,6 @@ public class DocletModeTest {
 
     @Test
     public void when_set_doclet_mapping_mode() throws IOException, ParseException {
-        // GIVEN
-        // setMode("mapping");
         // WHEN
         runDoclet("mapping");
         // Then
