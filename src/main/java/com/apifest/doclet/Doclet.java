@@ -69,6 +69,7 @@ public class Doclet {
     private static final String APIFEST_ACTION = "apifest.action";
     private static final String APIFEST_FILTER = "apifest.filter";
     private static final String APIFEST_SCOPE = "apifest.scope";
+    private static final String APIFEST_HIDDEN = "apifest.hidden";
     private static final String APIFEST_RE = "apifest.re.";
     private static final String APIFEST_BACKEND_HOST = "apifest.backend.host";
     private static final String APIFEST_BACKEND_PORT = "apifest.backend.port";
@@ -76,6 +77,7 @@ public class Doclet {
     private static final String APIFEST_DOCS_DESCRIPTION = "apifest.docs.description";
     private static final String APIFEST_DOCS_SUMMARY = "apifest.docs.summary";
     private static final String APIFEST_DOCS_GROUP = "apifest.docs.group";
+    private static final String APIFEST_DOCS_HIDDEN = "apifest.docs.hidden";
 
     // returned when a variable is missing in the properties file and then
     // passed to the Doclet as env variable
@@ -113,7 +115,7 @@ public class Doclet {
 
     /**
      * Starts the doclet from the command line.
-     * 
+     *
      * @param args
      *            List of all the packages that need to be processed.
      */
@@ -243,14 +245,15 @@ public class Doclet {
             parseFilterTag(methodDoc, mappingEndpoint);
             parseAuthTypeTag(methodDoc, mappingEndpoint);
             parseEndpointBackendTags(methodDoc, mappingEndpoint);
+            parseHidden(methodDoc, mappingEndpoint, mappingEndpointDocumentation);
             parseMethodAnnotations(methodDoc, mappingEndpoint, mappingEndpointDocumentation);
         }
 
         if (parsed != null) {
-            if (mappingEndpoint != null) {
+            if (mappingEndpoint != null && !mappingEndpoint.isHidden()) {
                 parsed.setMappingEndpoint(mappingEndpoint);
             }
-            if (mappingEndpointDocumentation != null) {
+            if (mappingEndpointDocumentation != null && !mappingEndpointDocumentation.isHidden()) {
                 parsed.setMappingEndpointDocumentation(mappingEndpointDocumentation);
             }
         }
@@ -352,6 +355,14 @@ public class Doclet {
         if (docsGroup != null) {
             mappingEndpointDocumentation.setGroup(docsGroup);
         }
+    }
+
+    private static void parseHidden(MethodDoc methodDoc, MappingEndpoint mappingEndpoint, MappingEndpointDocumentation mappingEndpointDocumentation)
+    {
+        boolean isHidden = getFirstTag(methodDoc, APIFEST_HIDDEN) != null ;
+        mappingEndpoint.setHidden(isHidden);
+        isHidden = getFirstTag(methodDoc, APIFEST_DOCS_HIDDEN) != null;
+        mappingEndpointDocumentation.setHidden(isHidden);
     }
 
     private static void parseInternalEndpointTag(MethodDoc methodDoc, MappingEndpoint mappingEndpoint) {
