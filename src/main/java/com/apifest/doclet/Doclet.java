@@ -119,10 +119,8 @@ public class Doclet {
      * @param args
      *            List of all the packages that need to be processed.
      */
-    public static void main(String[] args, boolean usePropertiesFileConfiguration) {
-        if (usePropertiesFileConfiguration) {
-            Doclet.cofigureDocletProperties();
-        }
+    public static void main(String[] args) {
+        Doclet.cofigureDocletProperties();
         String[] docletArgs = Doclet.getDocletArgs(args);
         com.sun.tools.javadoc.Main.execute(docletArgs);
     }
@@ -250,10 +248,10 @@ public class Doclet {
         }
 
         if (parsed != null) {
-            if (mappingEndpoint != null && !mappingEndpoint.isHidden()) {
+            if (mappingEndpoint != null) {
                 parsed.setMappingEndpoint(mappingEndpoint);
             }
-            if (mappingEndpointDocumentation != null && !mappingEndpointDocumentation.isHidden()) {
+            if (mappingEndpointDocumentation != null) {
                 parsed.setMappingEndpointDocumentation(mappingEndpointDocumentation);
             }
         }
@@ -357,9 +355,8 @@ public class Doclet {
         }
     }
 
-    private static void parseHidden(MethodDoc methodDoc, MappingEndpoint mappingEndpoint, MappingEndpointDocumentation mappingEndpointDocumentation)
-    {
-        boolean isHidden = getFirstTag(methodDoc, APIFEST_HIDDEN) != null ;
+    private static void parseHidden(MethodDoc methodDoc, MappingEndpoint mappingEndpoint, MappingEndpointDocumentation mappingEndpointDocumentation) {
+        boolean isHidden = getFirstTag(methodDoc, APIFEST_HIDDEN) != null;
         mappingEndpoint.setHidden(isHidden);
         isHidden = getFirstTag(methodDoc, APIFEST_DOCS_HIDDEN) != null;
         mappingEndpointDocumentation.setHidden(isHidden);
@@ -393,7 +390,8 @@ public class Doclet {
         }
     }
 
-    private static void generateDocsFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws JsonGenerationException, JsonMappingException, IOException {
+    private static void generateDocsFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws JsonGenerationException, JsonMappingException,
+            IOException {
         ObjectMapper mapper = new ObjectMapper();
         AnnotationIntrospector introspector = new JaxbAnnotationIntrospector(TypeFactory.defaultInstance());
         mapper.setAnnotationIntrospector(introspector);
@@ -403,7 +401,7 @@ public class Doclet {
         List<MappingEndpointDocumentation> endpoints = new ArrayList<MappingEndpointDocumentation>();
         for (ParsedEndpoint parsed : parsedEndpoints) {
             MappingEndpointDocumentation endpoint = parsed.getMappingEndpointDocumentation();
-            if (endpoint != null) {
+            if (endpoint != null && !endpoint.isHidden()) {
                 endpoints.add(endpoint);
             }
         }
@@ -426,7 +424,7 @@ public class Doclet {
         List<MappingEndpoint> endpoints = new ArrayList<MappingEndpoint>();
         for (ParsedEndpoint parsed : parsedEndpoints) {
             MappingEndpoint endpoint = parsed.getMappingEndpoint();
-            if (endpoint != null) {
+            if (endpoint != null && !endpoint.isHidden()) {
                 endpoints.add(endpoint);
             }
         }
@@ -457,7 +455,10 @@ public class Doclet {
 
     private static void cofigureDocletProperties() {
         String propertiesFilePath = System.getProperty("propertiesFilePath");
-        if (propertiesFilePath == null || propertiesFilePath.isEmpty()) {
+        if (propertiesFilePath == null) {
+            return;
+        }
+        if (propertiesFilePath.isEmpty()) {
             throw new IllegalArgumentException("propertiesFilePath is invalid.");
         }
         Properties docletProps = Doclet.loadDocletProperties(propertiesFilePath);

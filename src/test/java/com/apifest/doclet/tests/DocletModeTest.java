@@ -11,13 +11,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.apifest.doclet.Doclet;
-import java.util.Arrays;
 
 public class DocletModeTest {
     @BeforeMethod
     public void setup() {
         System.setProperty("sourcePath", "./src/test/java/com/apifest/doclet/tests/resources");
-        System.setProperty("propertiesFilePath", "./src/test/java/com/apifest/doclet/tests/resources/project.properties");
         System.setProperty("mapping.version", "v1");
         System.setProperty("mapping.filename", "komfo-mappings.xml");
         System.setProperty("mapping.docs.filename", "komfo-mappings-docs.json");
@@ -38,7 +36,7 @@ public class DocletModeTest {
         Doclet doclet = new Doclet();
         String[] args = new String[] { filePath };
         setMode(mode);
-        Doclet.main(args, false);
+        Doclet.main(args);
     }
 
     private void findFile(String directory, String name, final String extension) {

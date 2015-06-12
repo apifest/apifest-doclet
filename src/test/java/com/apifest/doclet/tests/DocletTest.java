@@ -19,7 +19,6 @@ public class DocletTest {
     @BeforeMethod
     public void setup() {
         System.setProperty("sourcePath", "./src/test/java/com/apifest/doclet/tests/resources");
-        System.setProperty("propertiesFilePath", "./src/test/java/com/apifest/doclet/tests/resources/project.properties");
         System.setProperty("mode", "doc");
         System.setProperty("mapping.version", "v1");
         System.setProperty("mapping.filename", "komfo-mappings.xml");
@@ -42,7 +41,7 @@ public class DocletTest {
         String filePath = "./src/test/java/com/apifest/doclet/tests/resources/ParsingResource.java";
         Doclet doclet = new Doclet();
         String[] args = new String[] { filePath };
-        Doclet.main(args, false);
+        Doclet.main(args);
 
     }
 
