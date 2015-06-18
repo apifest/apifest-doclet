@@ -12,7 +12,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 @Path("/{platform: komfo|sitecore}/{clientId}/followers")
-public interface ParsingResource {
+public interface TestParsingResource {
 
     /**
      * @apifest.external /twitter/followers/metrics

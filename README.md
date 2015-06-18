@@ -3,18 +3,20 @@ ApiFest Doclet is a tool that generates ApiFest mapping configuration file (XML)
 the first mode the doclet is generating a XML file containing the mapping endpoints. In the second mode the Doclet generates a json file that contains documentation for every endpoint.
 Here are the custom Javadoc annotations that ApiFest Doclet is aware of:
 
-- @apifest.external - the endpoint visible to the world;
-- @apifest.internal - your API endpoint;
-- @apifest.action - the class name of the action that will be executed before requests hit your API;
-- @apifest.filter - the class name of the filter that will be executed before responses from API are returned back;
-- @apifest.scope - scope(s)(space-separated list) of the endpoint;
+- @apifest.external - the endpoint visible to the world.
+- @apifest.internal - your API endpoint.
+- @apifest.hidden - when added, that endpoint will not be included in the mappings.
+- @apifest.action - the class name of the action that will be executed before requests hit your API.
+- @apifest.filter - the class name of the filter that will be executed before responses from API are returned back.
+- @apifest.scope - scope(s)(space-separated list) of the endpoint.
 - @apifest.auth.type - *user* if user authentication is required, *client-app* if only client application authentication is required. 
-Note, that if the endpoint could be accessible without access token, then just skip this tag;
+Note, that if the endpoint could be accessible without access token, then just skip this tag.
 - @apifest.re.{varName} - regular expression used for variable with name {varName} (without brackets); if several variables, then
 add @apifest.re.{varName} for each of them.
-- @apifest.docs.description - long text description for the endpoint. 
+- @apifest.docs.description - long text description for the endpoint.
 - @apifest.docs.summary - short text description for the endpoint.
-- @apifest.docs.group - can be used to group endpoints.
+- @apifest.docs.group - can be used to group endpoints. 
+- @apifest.docs.hidden - when added, that endpoint won't be included in the mapping documentation.
 
 Currently, JAX-RS HTTP method annotations are used for setting the HTTP method of the endpoint.
 
@@ -93,6 +95,7 @@ If your project uses maven, here is an example integration of ApiFest Doclet in 
                   <additionalJOptions>
                     <additionalJOption>-J-Dmapping.version=${mapping.version}</additionalJOption>
                     <additionalJOption>-J-Dmapping.filename=${mapping.filename}</additionalJOption>
+                    <additionalJOption>-J-Dmapping.docs.filename=${mapping.docs.filename}</additionalJOption>
                     <additionalJOption>-J-Dbackend.host=${backend.host}</additionalJOption>
                     <additionalJOption>-J-Dbackend.port=${backend.port}</additionalJOption>
                     <additionalJOption>-J-Dapplication.path=${application.path}</additionalJOption>
@@ -112,7 +115,7 @@ If your project uses maven, here is an example integration of ApiFest Doclet in 
 ...
 ```
 
-where *backend.host*, *backend.port* and *mode* are defined in *project.properties* file; *mapping.version* and *mapping.filename* 
+where *backend.host*, *backend.port* and *mode* are defined in *project.properties* file; *mapping.version*, *mapping.filename* and *mapping.docs.filename* 
 could be defined in your pom.xml file so they stick to the code. *application.path* is the application path used to 
 obtain all application resources.
 Then you can use the following command in order to generate mapping xml file:

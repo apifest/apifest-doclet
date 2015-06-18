@@ -159,7 +159,7 @@ public class Doclet {
             System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
             return false;
         } catch (JsonGenerationException e) {
-            System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
+            System.out.println("ERROR: cannot create mapping documentation file, " + e.getMessage());
             return false;
         } catch (JsonMappingException e) {
             System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
@@ -176,7 +176,7 @@ public class Doclet {
     private static void validateConfiguration() {
         String modeInput = System.getProperty("mode");
         if (modeInput == null) {
-            throw new IllegalArgumentException("mode is invalid.");
+            modeInput = "mapping";
         }
         String[] modesSplit = modeInput.split(",");
         for (String modeSplit : modesSplit) {
@@ -236,7 +236,7 @@ public class Doclet {
 
             parseInternalEndpointTag(methodDoc, mappingEndpoint);
             parseDocsGroupTag(methodDoc, mappingEndpointDocumentation);
-            parseDocsSummaryTap(methodDoc, mappingEndpointDocumentation);
+            parseDocsSummaryTag(methodDoc, mappingEndpointDocumentation);
             parseDocsDescriptionTag(methodDoc, mappingEndpointDocumentation);
             parseScopeTag(methodDoc, mappingEndpoint, mappingEndpointDocumentation);
             parseActionTag(methodDoc, mappingEndpoint);
@@ -341,7 +341,7 @@ public class Doclet {
         }
     }
 
-    private static void parseDocsSummaryTap(MethodDoc methodDoc, MappingEndpointDocumentation mappingEndpointDocumentation) {
+    private static void parseDocsSummaryTag(MethodDoc methodDoc, MappingEndpointDocumentation mappingEndpointDocumentation) {
         String docsSummary = getFirstTag(methodDoc, APIFEST_DOCS_SUMMARY);
         if (docsSummary != null) {
             mappingEndpointDocumentation.setSummary(docsSummary);
@@ -406,7 +406,7 @@ public class Doclet {
             }
         }
         mappingDocs.setVersion(mappingVersion);
-        mappingDocs.setMappingEndpontDocumentation(endpoints);
+        mappingDocs.setMappingEndpointDocumentation(endpoints);
         mapper.writeValue(new File(outputFile), mappingDocs);
     }
 
