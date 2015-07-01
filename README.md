@@ -1,7 +1,12 @@
 #ApiFest Doclet
+
 ApiFest Doclet is a tool that generates ApiFest mapping configuration file (XML) from Javadoc. ApiFest Doclet supports two modes: "mapping" and "doc". When using
 the first mode the doclet is generating a XML file containing the mapping endpoints. In the second mode the Doclet generates a json file that contains documentation for every endpoint.
-Here are the custom Javadoc annotations that ApiFest Doclet is aware of:
+The tags supported by the doclet are outlined in the following sections.
+
+###Endpoint level tags
+
+These tags describe the general properties of the endpoint:
 
 - @apifest.external - the endpoint visible to the world.
 - @apifest.internal - your API endpoint.
@@ -17,10 +22,49 @@ add @apifest.re.{varName} for each of them.
 - @apifest.docs.summary - short text description for the endpoint.
 - @apifest.docs.group - can be used to group endpoints. 
 - @apifest.docs.hidden - when added, that endpoint won't be included in the mapping documentation.
+- @apifest.docs.exampleRequest - can be used to document an example request for this endpoint
+- @apifest.docs.exampleResult - can be used to document an example response from this endpoint
 
 Currently, JAX-RS HTTP method annotations are used for setting the HTTP method of the endpoint.
 
-###Features
+###Request Parameter level tags
+
+Typically, when a user calls an endpoint he/she must provide a set of request parameters. The following tags can be used to document these parameters:
+
+- @apifest.docs.paramsDescription - a general description of the request.
+- @apifest.docs.params.{parameterName} - specifying this tag will define a request parameter with name {parameterName} and description the value of the tag.    
+For example,    
+    @apifest.docs.params.myParameter This is my parameter!    
+will result in a parameter with name myParameter and description 'This is my parameter!'.    
+Note that the {parameterName} cannot contain the "." delimiter.
+- @apifest.docs.params.{parameterName}.name allows overriding the name. You might need this if you want to have a parameter name including special characters like the '.' delimiter or any character that breaks the Javadoc tag(whitespace, brackets,etc.)
+- @apifest.docs.params.{parameterName}.type - documents the type of the parameter. As far as the documentation is concerned, this is just a simple string and it does not make assumptions or guarantees about the actual type of the parameter.
+- @apifest.docs.params.{parameterName}.exampleValue - can be used to document an example value for this request parameter.
+- @apifest.docs.params.{parameterName}.optional - the presence of this tag indicates that the parameter is optional. All parameters are required by default.
+
+###Result Parameter level tags
+
+Calling an endpoint should yield some kind of result which consists of a set of result parameters. The following tags can be used to document these result parameters:
+
+- @apifest.docs.resultsDescription - a general description of the result.
+- @apifest.docs.results.{parameterName} - specifying this tag will define a result parameter with name {parameterName} and description the value of the tag.    
+For example,    
+    @apifest.docs.results.myParameter This is my result!    
+will result in a parameter with name myParameter and description 'This is my result!'.    
+Note that the {parameterName} cannot contain the "." delimiter.
+- @apifest.docs.results.{parameterName}.name allows overriding the name. You might need this if you want to have a parameter name including special characters like the '.' delimiter or any character that breaks the Javadoc tag(whitespace, brackets,etc.)
+- @apifest.docs.results.{parameterName}.type - documents the type of the parameter(string, list, number, etc.). As far as the documentation is concerned, this is just a simple string and it does not make assumptions or guarantees about the actual type of the parameter.
+- @apifest.docs.results.{parameterName}.optional - the presence of this tag indicates that the parameter is optional. All parameters are required by default.
+
+###Endpoint exceptions tags
+
+Sometimes users call the API in an incorrect manner and the API needs to respond with an error message. The following tags can be used to document these error messages:
+
+- @apifest.docs.exceptions.{parameterName} - use this tag to define the name of the exception and the conditions in which this exception occurs.
+- @apifest.docs.exceptions.{parameterName}.description - full description of the exception
+- @apifest.docs.exceptions.{parameterName}.code - the code of the exception
+
+##Features
 
 - generates ApiFest mapping configuration file from your Javadoc - custom annotations used;
 - keeps your code clean - no versions required in Javadoc annotations;
