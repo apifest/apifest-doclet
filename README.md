@@ -60,9 +60,9 @@ Note that the {parameterName} cannot contain the "." delimiter.
 
 Sometimes users call the API in an incorrect manner and the API needs to respond with an error message. The following tags can be used to document these error messages:
 
-- @apifest.docs.exceptions.{parameterName} - use this tag to define the name of the exception and the conditions in which this exception occurs.
-- @apifest.docs.exceptions.{parameterName}.description - full description of the exception
-- @apifest.docs.exceptions.{parameterName}.code - the code of the exception
+- @apifest.docs.exceptions.{exceptionName} - use this tag to define the name of the exception and the conditions in which this exception occurs.
+- @apifest.docs.exceptions.{exceptionName}.description - full description of the exception
+- @apifest.docs.exceptions.{exceptionName}.code - the code of the exception
 
 ##Features
 
