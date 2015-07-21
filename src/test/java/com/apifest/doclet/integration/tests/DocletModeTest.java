@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-package com.apifest.doclet.tests;
+package com.apifest.doclet.integration.tests;
 
 import java.io.File;
 import java.io.FilenameFilter;
