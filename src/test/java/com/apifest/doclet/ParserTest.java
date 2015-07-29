@@ -160,7 +160,7 @@ public class ParserTest {
         String applicationPath = "";
         String internalEndpoint = "/komfo/test/endpoint";
         tagMap.put("apifest.internal", internalEndpoint);
-        Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, applicationPath);
+        Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, mappingEndpointDocumentation, applicationPath);
         Assert.assertEquals(mappingEndpoint.getInternalEndpoint(), internalEndpoint);
     }
 
@@ -170,7 +170,7 @@ public class ParserTest {
         String internalEndpoint = "/komfo/test/endpoint";
         String path = applicationPath + internalEndpoint;
         tagMap.put("apifest.internal", internalEndpoint);
-        Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, applicationPath);
+        Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, mappingEndpointDocumentation, applicationPath);
         Assert.assertEquals(mappingEndpoint.getInternalEndpoint(), path);
     }
 
@@ -179,7 +179,7 @@ public class ParserTest {
         String applicationPath = "test";
         String internalEndpoint = "/komfo/{test}/endpoint";
         tagMap.put("apifest.internal", internalEndpoint);
-        Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, applicationPath);
+        Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, mappingEndpointDocumentation, applicationPath);
         Assert.assertEquals(mappingEndpoint.getVarName(), null);
         Assert.assertEquals(mappingEndpoint.getVarExpression(), null);
     }
@@ -191,7 +191,7 @@ public class ParserTest {
         String pathExpression = "abc";
         tagMap.put("apifest.internal", internalEndpoint);
         tagMap.put("apifest.re.test", pathExpression);
-        Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, applicationPath);
+        Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, mappingEndpointDocumentation, applicationPath);
         Assert.assertEquals(mappingEndpoint.getVarName(), "test");
         Assert.assertEquals(mappingEndpoint.getVarExpression(), pathExpression);
     }
