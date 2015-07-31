@@ -227,7 +227,7 @@ public class Doclet {
             mappingEndpoint.setExternalEndpoint("/" + mappingVersion + externalEndpoint);
             mappingEndpointDocumentation.setEndpoint("/" + mappingVersion + externalEndpoint);
 
-            Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, applicationPath);
+            Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, mappingEndpointDocumentation, applicationPath);
             Parser.parseDocsDescriptiveTags(tagMap, mappingEndpointDocumentation);
             Parser.parseScopeTag(tagMap, mappingEndpoint, mappingEndpointDocumentation);
             Parser.parseActionTag(tagMap, mappingEndpoint, defaultActionClass);

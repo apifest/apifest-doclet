@@ -193,7 +193,7 @@ public class Parser
         mappingEndpointDocumentation.setHidden(isHidden);
     }
 
-    static void parseInternalEndpointTag(Map<String, String> tagMap, MappingEndpoint mappingEndpoint, String applicationPath) {
+    static void parseInternalEndpointTag(Map<String, String> tagMap, MappingEndpoint mappingEndpoint, MappingEndpointDocumentation mappingEndpointDocumentation, String applicationPath) {
         String internalEndpoint = tagMap.get(APIFEST_INTERNAL);
         if (internalEndpoint != null) {
             if (applicationPath == null || applicationPath.isEmpty() || NULL.equals(applicationPath)) {
@@ -218,6 +218,8 @@ public class Parser
                     }
                 }
             }
+            mappingEndpointDocumentation.setVarExpression(mappingEndpoint.getVarExpression());
+            mappingEndpointDocumentation.setVarName(mappingEndpoint.getVarName());
         }
     }
 
