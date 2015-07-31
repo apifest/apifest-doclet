@@ -210,7 +210,6 @@ public class Parser
                     if (mappingEndpoint.getVarName() == null) {
                         mappingEndpoint.setVarName(varName);
                         mappingEndpoint.setVarExpression(varExpression);
-
                     } else {
                         // add current varName and varExpression with SPACE
                         // before that
