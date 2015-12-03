@@ -126,9 +126,11 @@ public class Parser
     static void parseActionTag(Map<String, String> tagMap, MappingEndpoint mappingEndpoint, String defaultActionClass) {
         String actionsTag = tagMap.get(APIFEST_ACTION);
         if (actionsTag != null) {
-            MappingAction action = new MappingAction();
-            action.setActionClassName(actionsTag);
-            mappingEndpoint.setAction(action);
+            if(!actionsTag.equals("None")) {
+                MappingAction action = new MappingAction();
+                action.setActionClassName(actionsTag);
+                mappingEndpoint.setAction(action);
+            }
         } else {
             if (defaultActionClass != null) {
                 MappingAction action = new MappingAction();
