@@ -19,6 +19,7 @@ package com.apifest.doclet;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -32,6 +33,8 @@ import com.apifest.api.params.ExceptionDocumentation;
 import com.apifest.api.params.RequestParamDocumentation;
 import com.apifest.api.params.ResultParamDocumentation;
 import com.sun.javadoc.AnnotationDesc;
+import com.sun.javadoc.AnnotationDesc.ElementValuePair;
+import com.sun.javadoc.AnnotationValue;
 
 public class Parser
 {
@@ -67,13 +70,45 @@ public class Parser
     private static List<String> httpMethods = Arrays.asList("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS");
     private static final String NULL = "null";
 
-    static void parseMethodAnnotations(AnnotationDesc[] annotations, MappingEndpoint mappingEndpoint, MappingEndpointDocumentation mappingEndpointDocumentation) {
+    static void parseMethodAnnotations(AnnotationDesc[] annotations,
+            MappingEndpoint mappingEndpoint,
+            MappingEndpointDocumentation mappingEndpointDocumentation,
+            Map<String, List<String>> customAnnotations) {
         for (AnnotationDesc a : annotations) {
             if (a != null && (httpMethods.contains(a.annotationType().name()))) {
                 String annotationTypeName = a.annotationType().name();
                 mappingEndpoint.setMethod(annotationTypeName);
                 mappingEndpointDocumentation.setMethod(annotationTypeName);
+                continue;
             }
+            List<String> propertiesToRead = customAnnotations.get(a.annotationType().qualifiedName());
+            if (propertiesToRead != null) {
+                for (ElementValuePair elementValuePair : a.elementValues()) {
+                    if (propertiesToRead.isEmpty() || propertiesToRead.contains(elementValuePair.element().name())) {
+                        if (mappingEndpoint.getCustomProperties() == null) {
+                            mappingEndpoint.setCustomProperties(new HashMap<String, String>());
+                        }
+                        String valueString;
+                        if (elementValuePair.value().value() instanceof AnnotationValue[]) {
+                            AnnotationValue[] value = (AnnotationValue[]) elementValuePair.value().value();
+                            StringBuilder builder = new StringBuilder();
+                            for (AnnotationValue annotationValue : value) {
+                                if (builder.length() > 0) {
+                                    builder.append(",");
+                                }
+                                builder.append(annotationValue.value().toString());
+                            }
+                            valueString = builder.toString();
+                        } else {
+                            valueString = elementValuePair.value().toString();
+                        }
+                        mappingEndpoint.getCustomProperties()
+                                .put(elementValuePair.element().name(),
+                                        valueString);
+                    }
+                }
+            }
+
         }
     }
 

@@ -23,7 +23,9 @@ import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -88,6 +90,8 @@ public class Doclet {
 
     // if no filter is declared, use that
     private static String defaultFilterClass;
+
+    private static Map<String, List<String>> customAnnotations = new HashMap<String, List<String>>();
 
     private static Set<DocletMode> docletMode = new HashSet<DocletMode>();
 
@@ -200,6 +204,24 @@ public class Doclet {
             }
             defaultActionClass = System.getProperty("defaultActionClass");
             defaultFilterClass = System.getProperty("defaultFilterClass");
+
+            String customAnnotationsValue = System.getProperty("customAnnotations");
+            if (customAnnotationsValue != null && !customAnnotationsValue.isEmpty() && !NULL.equals(customAnnotationsValue)) {
+                for (String annotation : customAnnotationsValue.split(",")) {
+                    if (annotation.indexOf(":") > -1) {
+                        String[] tokens = annotation.split(":"); // regex compiled everytime
+                        List<String> annotationAttributeList = customAnnotations.get(tokens[0]);
+                        if (annotationAttributeList == null) {
+                            annotationAttributeList = new ArrayList<String>();
+                            customAnnotations.put(tokens[0], annotationAttributeList);
+                        }
+                        annotationAttributeList.add(tokens[1]);
+                    } else {
+                        customAnnotations.put(annotation, Collections.<String>emptyList());
+                    }
+                }
+                System.out.println("customAnnotationsValue: " + customAnnotationsValue);
+            }
         }
         mappingOutputFile = System.getProperty("mapping.filename");
         if (docletMode.contains(DocletMode.MAPPING) && (mappingOutputFile == null || mappingOutputFile.isEmpty())) {
@@ -235,7 +257,10 @@ public class Doclet {
             Parser.parseAuthTypeTag(tagMap, mappingEndpoint);
             Parser.parseEndpointBackendTags(tagMap, mappingEndpoint, backendHost, backendPort);
             Parser.parseHidden(tagMap, mappingEndpoint, mappingEndpointDocumentation);
-            Parser.parseMethodAnnotations(annotations, mappingEndpoint, mappingEndpointDocumentation);
+            Parser.parseMethodAnnotations(annotations,
+                    mappingEndpoint,
+                    mappingEndpointDocumentation,
+                    customAnnotations);
             Parser.parseRequestParams(tagMap, mappingEndpointDocumentation);
             Parser.parseResultParams(tagMap, mappingEndpointDocumentation);
             Parser.parseExceptions(tagMap, mappingEndpointDocumentation);
