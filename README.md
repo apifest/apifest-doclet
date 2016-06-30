@@ -176,4 +176,4 @@ and record the attributes of. The doclet (and the mappings format) currently do 
 If provided, the doclet will read the attributes from the specified annotations on the endpoints and then add
 their values to the additinalProperties of the generated mapping. The property should be a comma
 separated list of annotations and their attributes. If no attributes are provided for an annotation
-then all of it's attributes will be recorded.
+then all of its attributes will be recorded.
