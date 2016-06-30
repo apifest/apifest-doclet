@@ -103,7 +103,7 @@ public class Parser
                             valueString = elementValuePair.value().toString();
                         }
                         mappingEndpoint.getCustomProperties()
-                                .put(elementValuePair.element().name(),
+                                .put(elementValuePair.element().qualifiedName(),
                                         valueString);
                     }
                 }
