@@ -70,6 +70,7 @@ Sometimes users call the API in an incorrect manner and the API needs to respond
 - keeps your code clean - no versions required in Javadoc annotations;
 - all version/environment specific settings are passed as variables; 
 - easy integration in maven projects
+- supports extracting data from any custom Java annotation
 
 
 ###Usage
@@ -146,6 +147,7 @@ If your project uses maven, here is an example integration of ApiFest Doclet in 
                     <additionalJOption>-J-DdefaultActionClass=${defaultActionClass}</additionalJOption>
                     <additionalJOption>-J-DdefaultFilterClass=${defaultFilterClass}</additionalJOption>
                     <additionalJOption>-J-Dmode=${mode}</additionalJOption>
+                    <additionalJOption>-J-DcustomAnnotations=annotationAQualifiedName,annotationBQualifiedName:value,annotationBQualifiedName:data</additionalJOption>
                   </additionalJOptions>
                   <useStandardDocletOptions>false</useStandardDocletOptions>
                 </configuration>
@@ -167,4 +169,11 @@ Then you can use the following command in order to generate mapping xml file:
 
 Note, that *mapping.version* value will be prepended to the apifest.external annotation value.
 If no value is set for *mapping.filename*, then *output_mapping_[mapping.version].xml* will be used. 
-If the example pom integration is used, then the mapping file will be stored in *target/site/apidocs* directory. 
+If the example pom integration is used, then the mapping file will be stored in *target/site/apidocs* directory.
+
+The optional *customAnnotations* property allows the user to specify a list of annotations that the doclet should read
+and record the attributes of. The doclet (and the mappings format) currently do no support annotations without attributes.
+If provided, the doclet will read the attributes from the specified annotations on the endpoints and then add
+their values to the additinalProperties of the generated mapping. The property should be a comma
+separated list of annotations and their attributes. If no attributes are provided for an annotation
+then all of its attributes will be recorded.
