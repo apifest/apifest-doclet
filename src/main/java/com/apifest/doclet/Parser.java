@@ -88,6 +88,9 @@ public class Parser
                         if (mappingEndpoint.getCustomProperties() == null) {
                             mappingEndpoint.setCustomProperties(new HashMap<String, String>());
                         }
+                        if (mappingEndpointDocumentation.getCustomProperties() == null) {
+                            mappingEndpointDocumentation.setCustomProperties(new HashMap<String, String>());
+                        }
                         String valueString;
                         if (elementValuePair.value().value() instanceof AnnotationValue[]) {
                             AnnotationValue[] value = (AnnotationValue[]) elementValuePair.value().value();
@@ -103,6 +106,9 @@ public class Parser
                             valueString = elementValuePair.value().toString();
                         }
                         mappingEndpoint.getCustomProperties()
+                                .put(elementValuePair.element().qualifiedName(),
+                                        valueString);
+                        mappingEndpointDocumentation.getCustomProperties()
                                 .put(elementValuePair.element().qualifiedName(),
                                         valueString);
                     }
