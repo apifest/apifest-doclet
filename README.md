@@ -1,10 +1,10 @@
-#ApiFest Doclet
+# ApiFest Doclet
 
 ApiFest Doclet is a tool that generates ApiFest mapping configuration file (XML) from Javadoc. ApiFest Doclet supports two modes: "mapping" and "doc". When using
 the first mode the doclet is generating a XML file containing the mapping endpoints. In the second mode the Doclet generates a json file that contains documentation for every endpoint.
 The tags supported by the doclet are outlined in the following sections.
 
-###Endpoint level tags
+### Endpoint level tags
 
 These tags describe the general properties of the endpoint:
 
@@ -27,7 +27,7 @@ add @apifest.re.{varName} for each of them.
 
 Currently, JAX-RS HTTP method annotations are used for setting the HTTP method of the endpoint.
 
-###Request Parameter level tags
+### Request Parameter level tags
 
 Typically, when a user calls an endpoint he/she must provide a set of request parameters. The following tags can be used to document these parameters:
 
@@ -42,7 +42,7 @@ Note that the {parameterName} cannot contain the "." delimiter.
 - @apifest.docs.params.{parameterName}.exampleValue - can be used to document an example value for this request parameter.
 - @apifest.docs.params.{parameterName}.optional - the presence of this tag indicates that the parameter is optional. All parameters are required by default.
 
-###Result Parameter level tags
+### Result Parameter level tags
 
 Calling an endpoint should yield some kind of result which consists of a set of result parameters. The following tags can be used to document these result parameters:
 
@@ -56,7 +56,7 @@ Note that the {parameterName} cannot contain the "." delimiter.
 - @apifest.docs.results.{parameterName}.type - documents the type of the parameter(string, list, number, etc.). As far as the documentation is concerned, this is just a simple string and it does not make assumptions or guarantees about the actual type of the parameter.
 - @apifest.docs.results.{parameterName}.optional - the presence of this tag indicates that the parameter is optional. All parameters are required by default.
 
-###Endpoint exceptions tags
+### Endpoint exceptions tags
 
 Sometimes users call the API in an incorrect manner and the API needs to respond with an error message. The following tags can be used to document these error messages:
 
@@ -64,7 +64,7 @@ Sometimes users call the API in an incorrect manner and the API needs to respond
 - @apifest.docs.exceptions.{exceptionName}.description - full description of the exception
 - @apifest.docs.exceptions.{exceptionName}.code - the code of the exception
 
-##Features
+## Features
 
 - generates ApiFest mapping configuration file from your Javadoc - custom annotations used;
 - keeps your code clean - no versions required in Javadoc annotations;
@@ -73,7 +73,7 @@ Sometimes users call the API in an incorrect manner and the API needs to respond
 - supports extracting data from any custom Java annotation
 
 
-###Usage
+### Usage
 ApiFest Doclet requires the following environment variables:
 
 For both modes:
