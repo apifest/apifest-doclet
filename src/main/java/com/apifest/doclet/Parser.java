@@ -223,7 +223,7 @@ public class Parser
             mappingEndpointDocumentation.setExampleRequest(exampleRequest);
         }
         String exampleResult = tagMap.get(APIFEST_DOCS_EXAMPLE_RESULT);
-        if (exampleRequest != null) {
+        if (exampleResult != null) {
             mappingEndpointDocumentation.setExampleResult(exampleResult);
         }
 
