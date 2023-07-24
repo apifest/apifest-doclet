@@ -16,26 +16,16 @@
 
 package com.apifest.doclet;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
+import javax.lang.model.SourceVersion;
+import javax.lang.model.element.*;
+import javax.tools.DocumentationTool;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
 
 import com.apifest.api.Mapping;
 import com.apifest.api.Mapping.Backend;
@@ -43,6 +33,7 @@ import com.apifest.api.Mapping.EndpointsWrapper;
 import com.apifest.api.MappingDocumentation;
 import com.apifest.api.MappingEndpoint;
 import com.apifest.api.MappingEndpointDocumentation;
+import com.apifest.doclet.option.*;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -50,11 +41,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
-import com.sun.javadoc.AnnotationDesc;
-import com.sun.javadoc.ClassDoc;
-import com.sun.javadoc.MethodDoc;
-import com.sun.javadoc.RootDoc;
-import com.sun.javadoc.Tag;
+import com.sun.source.doctree.DocCommentTree;
+import com.sun.source.doctree.DocTree;
+import com.sun.source.util.DocTrees;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.PropertyException;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jdk.javadoc.doclet.DocletEnvironment;
+import jdk.javadoc.doclet.Reporter;
+
 
 /**
  * Parse Javadoc tags and create output mapping file. HTTP methods are extracted
@@ -62,7 +58,47 @@ import com.sun.javadoc.Tag;
  *
  * @author Rossitsa Borissova
  */
-public class Doclet {
+public class Doclet implements jdk.javadoc.doclet.Doclet {
+    Reporter reporter;
+    ApplicationPathOption applicationPathOption = new ApplicationPathOption();
+    BackendHostOption backendHostOption = new BackendHostOption();
+    BackendPortOption backendPortOption = new BackendPortOption();
+    DefaultActionClassOption defaultActionClassOption = new DefaultActionClassOption();
+    DefaultFilterClassOption defaultFilterClassOption = new DefaultFilterClassOption();
+    MappingDocsFilenameOption mappingDocsFilenameOption = new MappingDocsFilenameOption();
+    MappingFilenameOption mappingFilenameOption = new MappingFilenameOption();
+    MappingVersionOption mappingVersionOption = new MappingVersionOption();
+    ModeOption modeOption = new ModeOption();
+    CustomAnnotationOption customAnnotationOption = new CustomAnnotationOption();
+    private final Set<Option> supportedOptions = Set.of(
+            applicationPathOption, backendHostOption, backendPortOption,
+            defaultActionClassOption, defaultFilterClassOption, mappingDocsFilenameOption,
+            mappingFilenameOption, mappingVersionOption, modeOption,
+            customAnnotationOption
+    );
+    DocletEnvironment docEnv;
+
+    @Override
+    public void init(Locale locale, Reporter reporter) {
+        // Initialize your doclet
+        this.reporter = reporter;
+        // You can now access the options via reporter.getOptions()
+    }
+
+    @Override
+    public String getName() {
+        return "myDoclet";
+    }
+
+    @Override
+    public SourceVersion getSupportedSourceVersion() {
+        return SourceVersion.latest();
+    }
+
+    @Override
+    public Set<Option> getSupportedOptions() {
+        return supportedOptions;
+    }
 
     private static final String APIFEST_EXTERNAL = "apifest.external";
 
@@ -71,29 +107,6 @@ public class Doclet {
     private static final String NULL = "null";
 
     // valid values: user or client-app
-
-
-    private static String mappingVersion;
-
-    private static String backendHost;
-
-    private static Integer backendPort;
-
-    private static String mappingOutputFile;
-
-    private static String mappingDocsOutputFile;
-
-    private static String applicationPath;
-
-    // if no action is declared, use that
-    private static String defaultActionClass;
-
-    // if no filter is declared, use that
-    private static String defaultFilterClass;
-
-    private static Map<String, List<String>> customAnnotations = new HashMap<String, List<String>>();
-
-    private static Set<DocletMode> docletMode = new HashSet<DocletMode>();
 
     private static final String DEFAULT_MAPPING_NAME = "output_mapping_%s.xml";
 
@@ -104,137 +117,119 @@ public class Doclet {
      *            List of all the packages that need to be processed.
      */
     public static void main(String[] args) {
-        Doclet.configureDocletProperties();
-        String[] docletArgs = Doclet.getDocletArgs(args);
-        com.sun.tools.javadoc.Main.execute(docletArgs);
+//        Doclet.configureDocletProperties();
+//        String[] docletArgs = Doclet.getDocletArgs(args);
+        String[] ass = new String[args.length + 1];
+        ass[0] = "/usr/local/java/jdk-17.0.7/bin/javadoc";
+        for (int i = 0; i < args.length; i++) {
+            ass[i + 1] = args[i];
+        }
+        ProcessBuilder pb = new ProcessBuilder(ass);
+        pb.redirectErrorStream(true);
+        Process p = null;
+        try {
+            p = pb.start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                System.out.println(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public static boolean start(RootDoc root) {
-        try {
-            validateConfiguration();
-        } catch (IllegalArgumentException ex) {
-            System.out.println("ERROR: " + ex.getMessage());
+    public boolean run(DocletEnvironment docEnv) {
+        this.docEnv = docEnv;
+        if (!validateConfiguration()) {
             return false;
         }
-
-        System.out.println("Start ApiFest Doclet>>>>>>>>>>>>>>>>>>>");
-        System.out.println("mapping.version is: " + System.getProperty("mapping.version"));
-
-        try {
-            List<ParsedEndpoint> parsedEndpoints = new ArrayList<ParsedEndpoint>();
-            ClassDoc[] classes = root.classes();
-            for (ClassDoc clazz : classes) {
-                MethodDoc[] mDocs = clazz.methods();
-                for (MethodDoc doc : mDocs) {
-                    Map<String, String> tags = extractTags(doc);
-                    ParsedEndpoint parsed = parseEndpoint(tags, doc.annotations());
-                    if (parsed != null) {
-                        parsedEndpoints.add(parsed);
-                    }
+        List<ParsedEndpoint> parsedEndpoints = new ArrayList<ParsedEndpoint>();
+        for (Element element : docEnv.getIncludedElements()) {
+            if (element.getKind() != ElementKind.CLASS) {
+                continue;
+            }
+            TypeElement classElement = (TypeElement) element;
+            for (Element enclosedElement : classElement.getEnclosedElements()) {
+                if (!(enclosedElement instanceof ExecutableElement methodElement)) {
+                    continue;
+                }
+                Map<String, String> tags = extractTags(methodElement, docEnv.getDocTrees());
+                ParsedEndpoint parsed;
+                try {
+                    parsed = parseEndpoint(tags, docEnv.getElementUtils().getAllAnnotationMirrors(element));
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+                if (parsed != null) {
+                    parsedEndpoints.add(parsed);
                 }
             }
-            EndpointComparator.orderEndpoints(parsedEndpoints);
-            if (docletMode.contains(DocletMode.DOC)) {
-                generateDocsFile(parsedEndpoints, mappingDocsOutputFile);
+        }
+
+        EndpointComparator.orderEndpoints(parsedEndpoints);
+        try {
+            if (modeOption.getDocletModes().contains(DocletMode.DOC)) {
+                generateDocsFile(parsedEndpoints, mappingDocsFilenameOption.getMappingDocsFilename());
             }
-            if (docletMode.contains(DocletMode.MAPPING)) {
-                generateMappingFile(parsedEndpoints, mappingOutputFile);
+            if (modeOption.getDocletModes().contains(DocletMode.MAPPING)) {
+                generateMappingFile(parsedEndpoints, mappingFilenameOption.getMappingFilename());
             }
-            return true;
-        } catch (ParseException e) {
-            System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
-            return false;
         } catch (JsonGenerationException e) {
             System.out.println("ERROR: cannot create mapping documentation file, " + e.getMessage());
             return false;
         } catch (JsonMappingException e) {
             System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
             return false;
-        } catch (IOException e) {
-            System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
-            return false;
-        } catch (JAXBException e) {
+        } catch (IOException | JAXBException e) {
             System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
             return false;
         }
+        return true;
     }
 
-    private static Map<String, String> extractTags(MethodDoc doc)
-    {
-        Map<String, String> tagMap =  new LinkedHashMap<String, String>();
-        for (Tag tag: doc.tags()){
-            // Strip the initial @
-            String name = tag.name().startsWith("@") ? tag.name().substring(1) : tag.name();
-            tagMap.put(name, tag.text());
+    private static Map<String, String> extractTags(ExecutableElement method, DocTrees trees) {
+        Map<String, String> tagMap = new LinkedHashMap<>();
+        DocCommentTree docCommentTree = trees.getDocCommentTree(method);
+        if (docCommentTree != null) {
+            for (DocTree dt : docCommentTree.getBlockTags()) {
+                String name = dt.getKind().toString();
+                String text = dt.toString();
+                // Strip the initial @
+                name = name.startsWith("@") ? name.substring(1) : name;
+                tagMap.put(name, text);
+            }
         }
         return tagMap;
     }
 
-    private static void validateConfiguration() {
-        String modeInput = System.getProperty("mode");
-        if (modeInput == null) {
-            modeInput = "mapping";
-        }
-        String[] modesSplit = modeInput.split(",");
-        for (String modeSplit : modesSplit) {
-            DocletMode mode = DocletMode.fromString(modeSplit);
-            if (mode == null) {
-                throw new IllegalArgumentException("One of the modes you have specified is invalid: " + modeSplit);
-            }
-            docletMode.add(mode);
-        }
-        mappingVersion = System.getProperty("mapping.version");
-        if (mappingVersion == null || mappingVersion.isEmpty() || NULL.equals(mappingVersion)) {
+    private boolean validateConfiguration() {
+        String mappingVersion = mappingVersionOption.getMappingVersion();
+        if (mappingVersion == null || mappingVersion.isEmpty() || NULL.equalsIgnoreCase(mappingVersion)) {
             throw new IllegalArgumentException("mapping.version is not set.");
         }
-        if (docletMode.contains(DocletMode.MAPPING)) {
-            backendHost = System.getProperty("backend.host");
-            if (backendHost == null || backendHost.length() == 0 || NULL.equals(backendHost)) {
+        if (modeOption.getDocletModes().contains(DocletMode.MAPPING)) {
+            String backendHost = backendHostOption.getBackendHost();
+            if (backendHost == null || backendHost.isEmpty() || NULL.equalsIgnoreCase(backendHost)) {
                 throw new IllegalArgumentException("backend.host is not set.");
             }
-            String backendPortStr = System.getProperty("backend.port");
-            if (backendPortStr == null || backendPortStr.length() == 0 || NULL.equals(backendPort)) {
-                System.out.println("ERROR: backend.port is not set");
-                throw new IllegalArgumentException("backend.host is not set.");
-            }
-            try {
-                backendPort = Integer.valueOf(backendPortStr);
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("backendPort is not an integer.");
-            }
-            defaultActionClass = System.getProperty("defaultActionClass");
-            defaultFilterClass = System.getProperty("defaultFilterClass");
-
-            String customAnnotationsValue = System.getProperty("customAnnotations");
-            if (customAnnotationsValue != null && !customAnnotationsValue.isEmpty() && !NULL.equals(customAnnotationsValue)) {
-                for (String annotation : customAnnotationsValue.split(",")) {
-                    if (annotation.indexOf(":") > -1) {
-                        String[] tokens = annotation.split(":"); // regex compiled everytime
-                        List<String> annotationAttributeList = customAnnotations.get(tokens[0]);
-                        if (annotationAttributeList == null) {
-                            annotationAttributeList = new ArrayList<String>();
-                            customAnnotations.put(tokens[0], annotationAttributeList);
-                        }
-                        annotationAttributeList.add(tokens[1]);
-                    } else {
-                        customAnnotations.put(annotation, Collections.<String>emptyList());
-                    }
-                }
-                System.out.println("customAnnotationsValue: " + customAnnotationsValue);
-            }
+            System.out.println("customAnnotationsValue: " + customAnnotationOption.getCustomAnnotations().keySet());
         }
-        mappingOutputFile = System.getProperty("mapping.filename");
-        if (docletMode.contains(DocletMode.MAPPING) && (mappingOutputFile == null || mappingOutputFile.isEmpty())) {
+        String mappingOutputFile = mappingFilenameOption.getMappingFilename();
+        if (modeOption.getDocletModes().contains(DocletMode.MAPPING) && (mappingOutputFile == null || mappingOutputFile.isEmpty())) {
             throw new IllegalArgumentException("the mappings output file must be provided.");
         }
-        mappingDocsOutputFile = System.getProperty("mapping.docs.filename");
-        if (docletMode.contains(DocletMode.DOC) && (mappingDocsOutputFile == null || mappingDocsOutputFile.isEmpty())) {
+        String mappingDocsOutputFile = mappingDocsFilenameOption.getMappingDocsFilename();
+        if (modeOption.getDocletModes().contains(DocletMode.DOC) && (mappingDocsOutputFile == null || mappingDocsOutputFile.isEmpty())) {
             throw new IllegalArgumentException("the mappings docs output file must be provided.");
         }
-        applicationPath = System.getProperty("application.path");
+        return true;
     }
 
-    private static ParsedEndpoint parseEndpoint(Map<String, String> tagMap, AnnotationDesc[] annotations) throws ParseException {
+    private ParsedEndpoint parseEndpoint(Map<String, String> tagMap, List<? extends AnnotationMirror> annotations) throws ParseException {
         ParsedEndpoint parsed = null;
         MappingEndpoint mappingEndpoint = null;
         MappingEndpointDocumentation mappingEndpointDocumentation = null;
@@ -246,40 +241,34 @@ public class Doclet {
             mappingEndpoint = new MappingEndpoint();
             mappingEndpointDocumentation = new MappingEndpointDocumentation();
 
-            mappingEndpoint.setExternalEndpoint("/" + mappingVersion + externalEndpoint);
-            mappingEndpointDocumentation.setEndpoint("/" + mappingVersion + externalEndpoint);
+            mappingEndpoint.setExternalEndpoint("/" + mappingVersionOption.getMappingVersion() + externalEndpoint);
+            mappingEndpointDocumentation.setEndpoint("/" + mappingVersionOption.getMappingVersion() + externalEndpoint);
 
-            Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, mappingEndpointDocumentation, applicationPath);
+            Parser.parseInternalEndpointTag(tagMap, mappingEndpoint, mappingEndpointDocumentation, applicationPathOption.getApplicationPath());
             Parser.parseDocsDescriptiveTags(tagMap, mappingEndpointDocumentation);
             Parser.parseScopeTag(tagMap, mappingEndpoint, mappingEndpointDocumentation);
-            Parser.parseActionTag(tagMap, mappingEndpoint, defaultActionClass);
-            Parser.parseFilterTag(tagMap, mappingEndpoint, defaultFilterClass);
+            Parser.parseActionTag(tagMap, mappingEndpoint, defaultActionClassOption.getDefaultActionClass());
+            Parser.parseFilterTag(tagMap, mappingEndpoint, defaultFilterClassOption.getDefaultFilterClass());
             Parser.parseAuthTypeTag(tagMap, mappingEndpoint);
-            Parser.parseEndpointBackendTags(tagMap, mappingEndpoint, backendHost, backendPort);
+            Parser.parseEndpointBackendTags(tagMap, mappingEndpoint, backendHostOption.getBackendHost(), backendPortOption.getBackendPort());
             Parser.parseHidden(tagMap, mappingEndpoint, mappingEndpointDocumentation);
             Parser.parseMethodAnnotations(annotations,
                     mappingEndpoint,
                     mappingEndpointDocumentation,
-                    customAnnotations);
+                    customAnnotationOption.getCustomAnnotations());
             Parser.parseRequestParams(tagMap, mappingEndpointDocumentation);
             Parser.parseResultParams(tagMap, mappingEndpointDocumentation);
             Parser.parseExceptions(tagMap, mappingEndpointDocumentation);
         }
 
         if (parsed != null) {
-            if (mappingEndpoint != null) {
-                parsed.setMappingEndpoint(mappingEndpoint);
-            }
-            if (mappingEndpointDocumentation != null) {
-                parsed.setMappingEndpointDocumentation(mappingEndpointDocumentation);
-            }
+            parsed.setMappingEndpoint(mappingEndpoint);
+            parsed.setMappingEndpointDocumentation(mappingEndpointDocumentation);
         }
         return parsed;
     }
 
-
-
-    private static void generateDocsFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws JsonGenerationException, JsonMappingException,
+    private void generateDocsFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws JsonGenerationException, JsonMappingException,
             IOException {
         ObjectMapper mapper = new ObjectMapper();
         AnnotationIntrospector introspector = new JaxbAnnotationIntrospector(TypeFactory.defaultInstance());
@@ -294,18 +283,25 @@ public class Doclet {
                 endpoints.add(endpoint);
             }
         }
-        mappingDocs.setVersion(mappingVersion);
+        mappingDocs.setVersion(mappingVersionOption.getMappingVersion());
         mappingDocs.setMappingEndpointDocumentation(endpoints);
         mapper.writeValue(new File(outputFile), mappingDocs);
     }
 
-    private static void generateMappingFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws JAXBException {
-        if (outputFile == null || outputFile.length() == 0 || NULL.equals(outputFile)) {
+    private void generateMappingFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws JAXBException {
+        String mappingVersion = mappingVersionOption.getMappingVersion();
+        String backendHost = backendHostOption.getBackendHost();
+        int backendPort = backendPortOption.getBackendPort();
+        if (outputFile == null || outputFile.isEmpty() || NULL.equalsIgnoreCase(outputFile)) {
             outputFile = String.format(DEFAULT_MAPPING_NAME, mappingVersion);
         }
         JAXBContext jaxbContext = JAXBContext.newInstance(Mapping.class);
         Marshaller marshaller = jaxbContext.createMarshaller();
-        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+        try {
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+        } catch (PropertyException e) {
+            throw new RuntimeException(e);
+        }
         Mapping mapping = new Mapping();
         mapping.setVersion(mappingVersion);
         mapping.setBackend(new Backend(backendHost, backendPort));
@@ -369,5 +365,4 @@ public class Doclet {
         }
         return props;
     }
-
 }

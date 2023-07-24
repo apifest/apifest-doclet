@@ -16,12 +16,11 @@
 
 package com.apifest.doclet.integration.tests;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.apifest.doclet.Doclet;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -34,7 +33,9 @@ import org.testng.annotations.Test;
 import com.apifest.api.params.ExceptionDocumentation;
 import com.apifest.api.params.RequestParamDocumentation;
 import com.apifest.api.params.ResultParamDocumentation;
-import com.apifest.doclet.Doclet;
+
+import static junit.framework.Assert.fail;
+import static org.junit.Assert.assertTrue;
 
 public class DocletTest {
     @BeforeMethod
@@ -46,9 +47,56 @@ public class DocletTest {
         System.setProperty("mapping.docs.filename", "all-mappings-docs.json");
         System.setProperty("backend.host", "localhost");
         System.setProperty("backend.port", "1212");
-        System.setProperty(" application.path", "/");
+        System.setProperty("application.path", "/");
         System.setProperty("defaultActionClass", "com.all.mappings.DefaultMapping");
         System.setProperty("defaultFilterClass", "com.all.mappings.DefaultFilter");
+    }
+
+    @Test
+    public void testMain() {
+        PrintStream originalOut = System.out;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(bos));
+
+        String[] args = {
+                "-doclet",
+                "com.apifest.doclet.Doclet",
+                "-docletpath",
+                "target/classes",
+                "-sourcepath",
+                "./src/test/java/com/apifest/doclet/tests/resources",
+                "-mode",
+                "doc",
+                "-mappingVersion",
+                "v1",
+                "-mappingFilename",
+                "all-mappings.xml",
+                "-mappingDocsFilename",
+                "all-mappings-docs.json",
+                "-backendHost",
+                "localhost",
+                "-backendPort",
+                "1212",
+                "-applicationPath",
+                "/",
+                "-defaultActionClass",
+                "com.all.mappings.DefaultMapping",
+                "-defaultFilterClass",
+                "com.all.mappings.DefaultFilter",
+                "com.apifest.doclet"
+        };
+
+        try {
+            Doclet.main(args);
+        } catch (RuntimeException e) {
+            fail("Exception thrown during test: " + e.toString());
+        }
+
+        // Restore System.out
+        System.setOut(originalOut);
+
+        String output = new String(bos.toByteArray());
+        System.out.println(output);
     }
 
     private void deleteJsonFile(String path) {
@@ -377,7 +425,7 @@ public class DocletTest {
                 Assert.assertEquals((String) currentParam.get("name"), correctCurrentParam.getName());
                 Assert.assertEquals((String) currentParam.get("condition"), correctCurrentParam.getCondition());
                 Assert.assertEquals((String) currentParam.get("description"), correctCurrentParam.getDescription());
-                Assert.assertEquals(currentParam.get("code"), new Long(correctCurrentParam.getCode()));
+                Assert.assertEquals(currentParam.get("code"), Long.valueOf(correctCurrentParam.getCode()));
             }
         } finally {
             if (fileReader != null) {
@@ -412,7 +460,7 @@ public class DocletTest {
                 Assert.assertEquals((String) currentParam.get("name"), correctCurrentParam.getName());
                 Assert.assertEquals((String) currentParam.get("condition"), correctCurrentParam.getCondition());
                 Assert.assertEquals((String) currentParam.get("description"), correctCurrentParam.getDescription());
-                Assert.assertEquals(currentParam.get("code"), new Long(correctCurrentParam.getCode()));
+                Assert.assertEquals(currentParam.get("code"), Long.valueOf(correctCurrentParam.getCode()));
             }
         } finally {
             if (fileReader != null) {
