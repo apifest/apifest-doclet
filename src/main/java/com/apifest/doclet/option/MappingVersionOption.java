@@ -24,7 +24,7 @@ public class MappingVersionOption implements Option {
 
     @Override
     public List<String> getNames() {
-        return List.of("mappingVersion");
+        return List.of("-mappingVersion", "--mapping-version");
     }
 
     @Override

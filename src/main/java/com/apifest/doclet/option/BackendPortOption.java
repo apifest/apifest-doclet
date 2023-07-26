@@ -24,7 +24,7 @@ public class BackendPortOption implements Option {
 
     @Override
     public List<String> getNames() {
-        return List.of("backendPort");
+        return List.of("-backendPort", "--backend-port");
     }
 
     @Override

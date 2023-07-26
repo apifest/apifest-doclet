@@ -24,7 +24,7 @@ public class DefaultFilterClassOption implements Option {
 
     @Override
     public List<String> getNames() {
-        return List.of("defaultFilterClass");
+        return List.of("-defaultFilterClass", "--default-filter-class");
     }
 
     @Override

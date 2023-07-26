@@ -59,31 +59,22 @@ public class DocletTest {
         System.setOut(new PrintStream(bos));
 
         String[] args = {
-                "-doclet",
-                "com.apifest.doclet.Doclet",
-                "-docletpath",
-                "target/classes",
-                "-sourcepath",
-                "./src/test/java/com/apifest/doclet/tests/resources",
-                "-mode",
-                "doc",
-                "-mappingVersion",
-                "v1",
-                "-mappingFilename",
-                "all-mappings.xml",
-                "-mappingDocsFilename",
-                "all-mappings-docs.json",
-                "-backendHost",
-                "localhost",
-                "-backendPort",
-                "1212",
-                "-applicationPath",
-                "/",
-                "-defaultActionClass",
-                "com.all.mappings.DefaultMapping",
-                "-defaultFilterClass",
-                "com.all.mappings.DefaultFilter",
-                "com.apifest.doclet"
+                "-doclet", "com.apifest.doclet.Doclet",
+                "-docletpath", "./target/apifest-doclet-0.1.2-SNAPSHOT.jar",
+                "-sourcepath", "./src/test/java",
+                "-cp", "./target/apifest-doclet-0.1.2-SNAPSHOT.jar",
+                "-mode", "doc,mapping",
+                "-mappingVersion", "v1",
+                "-mappingFilename", "all-mappings.xml",
+                "-mappingDocsFilename", "all-mappings-docs.json",
+                "-backendHost", "localhost",
+                "-backendPort", "1212",
+                "-applicationPath", "/",
+                "-defaultActionClass", "com.all.mappings.DefaultMapping",
+                "-defaultFilterClass", "com.all.mappings.DefaultFilter",
+//                "-J-Xdebug",
+//                "-J-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=*:5005",
+                "com.apifest.doclet.tests.resources"
         };
 
         try {

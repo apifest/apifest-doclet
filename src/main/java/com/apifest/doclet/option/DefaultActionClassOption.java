@@ -24,7 +24,7 @@ public class DefaultActionClassOption implements Option {
 
     @Override
     public List<String> getNames() {
-        return List.of("defaultActionClass");
+        return List.of("-defaultActionClass", "--default-action-class");
     }
 
     @Override

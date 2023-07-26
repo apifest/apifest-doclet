@@ -24,7 +24,7 @@ public class MappingFilenameOption implements Option {
 
     @Override
     public List<String> getNames() {
-        return List.of("mappingFilename");
+        return List.of("-mappingFilename", "--mapping-filename");
     }
 
     @Override

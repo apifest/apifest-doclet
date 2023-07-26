@@ -24,7 +24,7 @@ public class BackendHostOption implements Option {
 
     @Override
     public List<String> getNames() {
-        return List.of("backendHost");
+        return List.of("-backendHost", "--backend-host");
     }
 
     @Override

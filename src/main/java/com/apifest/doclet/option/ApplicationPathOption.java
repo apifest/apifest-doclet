@@ -24,7 +24,7 @@ public class ApplicationPathOption implements Option {
 
     @Override
     public List<String> getNames() {
-        return List.of("applicationPath");
+        return List.of("-applicationPath", "--application-path");
     }
 
     @Override

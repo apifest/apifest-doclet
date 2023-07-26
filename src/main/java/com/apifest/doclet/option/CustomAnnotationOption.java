@@ -25,7 +25,7 @@ public class CustomAnnotationOption implements Option {
 
     @Override
     public List<String> getNames() {
-        return List.of("customAnnotations");
+        return List.of("-customAnnotations", "--custom-annotations");
     }
 
     @Override

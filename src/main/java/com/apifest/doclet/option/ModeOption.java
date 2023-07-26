@@ -45,7 +45,7 @@ public class ModeOption implements Option {
 
     @Override
     public List<String> getNames() {
-        return List.of("mode");
+        return List.of("-mode", "--mode");
     }
 
     @Override

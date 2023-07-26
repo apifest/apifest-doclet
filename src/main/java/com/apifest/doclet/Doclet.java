@@ -22,10 +22,6 @@ import java.util.*;
 
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
-import javax.tools.DocumentationTool;
-import javax.tools.JavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.ToolProvider;
 
 import com.apifest.api.Mapping;
 import com.apifest.api.Mapping.Backend;
@@ -43,6 +39,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.UnknownBlockTagTree;
 import com.sun.source.util.DocTrees;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.PropertyException;
@@ -81,13 +78,14 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
     @Override
     public void init(Locale locale, Reporter reporter) {
         // Initialize your doclet
+        System.out.println("HELLO INIT METHOD");
         this.reporter = reporter;
         // You can now access the options via reporter.getOptions()
     }
 
     @Override
     public String getName() {
-        return "myDoclet";
+        return getClass().getSimpleName();
     }
 
     @Override
@@ -149,7 +147,7 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
         }
         List<ParsedEndpoint> parsedEndpoints = new ArrayList<ParsedEndpoint>();
         for (Element element : docEnv.getIncludedElements()) {
-            if (element.getKind() != ElementKind.CLASS) {
+            if (element.getKind() != ElementKind.INTERFACE) {
                 continue;
             }
             TypeElement classElement = (TypeElement) element;
@@ -196,8 +194,14 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
         DocCommentTree docCommentTree = trees.getDocCommentTree(method);
         if (docCommentTree != null) {
             for (DocTree dt : docCommentTree.getBlockTags()) {
-                String name = dt.getKind().toString();
-                String text = dt.toString();
+                if (!(dt instanceof UnknownBlockTagTree blockTag)) {
+                    continue;
+                }
+                String name = blockTag.getTagName();
+                if (blockTag.getContent().isEmpty()) {
+                    continue;
+                }
+                String text = blockTag.getContent().get(0).toString();
                 // Strip the initial @
                 name = name.startsWith("@") ? name.substring(1) : name;
                 tagMap.put(name, text);
