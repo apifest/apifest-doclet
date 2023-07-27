@@ -36,7 +36,6 @@ public class BackendPortOption implements Option {
     public boolean process(String option, List<String> arguments) {
         String backendPort = arguments.get(0);
         if (backendPort == null || backendPort.isEmpty() || "null".equalsIgnoreCase(backendPort)) {
-            System.out.println("ERROR: backend.port is not set");
             throw new IllegalArgumentException("backend.host is not set.");
         }
         try {

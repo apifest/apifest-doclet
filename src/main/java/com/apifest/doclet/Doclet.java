@@ -36,17 +36,19 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
+import com.fasterxml.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationIntrospector;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.UnknownBlockTagTree;
 import com.sun.source.util.DocTrees;
+import com.sun.source.util.SimpleDocTreeVisitor;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.PropertyException;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
+import jdk.javadoc.doclet.StandardDoclet;
 
 
 /**
@@ -74,6 +76,7 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
             customAnnotationOption
     );
     DocletEnvironment docEnv;
+    public static List<String> errors = new ArrayList<>();
 
     @Override
     public void init(Locale locale, Reporter reporter) {
@@ -145,7 +148,7 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
         if (!validateConfiguration()) {
             return false;
         }
-        List<ParsedEndpoint> parsedEndpoints = new ArrayList<ParsedEndpoint>();
+        List<ParsedEndpoint> parsedEndpoints = new ArrayList<>();
         for (Element element : docEnv.getIncludedElements()) {
             if (element.getKind() != ElementKind.INTERFACE) {
                 continue;
@@ -155,7 +158,7 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
                 if (!(enclosedElement instanceof ExecutableElement methodElement)) {
                     continue;
                 }
-                Map<String, String> tags = extractTags(methodElement, docEnv.getDocTrees());
+                Map<String, String> tags = extractTags(methodElement);
                 ParsedEndpoint parsed;
                 try {
                     parsed = parseEndpoint(tags, docEnv.getElementUtils().getAllAnnotationMirrors(element));
@@ -189,24 +192,37 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
         return true;
     }
 
-    private static Map<String, String> extractTags(ExecutableElement method, DocTrees trees) {
-        Map<String, String> tagMap = new LinkedHashMap<>();
-        DocCommentTree docCommentTree = trees.getDocCommentTree(method);
-        if (docCommentTree != null) {
-            for (DocTree dt : docCommentTree.getBlockTags()) {
-                if (!(dt instanceof UnknownBlockTagTree blockTag)) {
-                    continue;
-                }
-                String name = blockTag.getTagName();
-                if (blockTag.getContent().isEmpty()) {
-                    continue;
-                }
-                String text = blockTag.getContent().get(0).toString();
-                // Strip the initial @
-                name = name.startsWith("@") ? name.substring(1) : name;
-                tagMap.put(name, text);
-            }
+    class TagScanner extends SimpleDocTreeVisitor<Void, Void> {
+        private final Map<String, String> tags;
+
+        TagScanner(Map<String, String> tags) {
+            this.tags = tags;
         }
+
+        @Override
+        public Void visitDocComment(DocCommentTree tree, Void p) {
+            return visit(tree.getBlockTags(), null);
+        }
+
+        @Override
+        public Void visitUnknownBlockTag(UnknownBlockTagTree tree, Void p) {
+            String name = tree.getTagName();
+            String content = tree.getContent().toString();
+            if (!tags.containsKey(name)) {
+                tags.put(name, content);
+            }
+            return null;
+        }
+    }
+
+    private Map<String, String> extractTags(ExecutableElement method) {
+        Map<String, String> tagMap = new TreeMap<>();
+        DocCommentTree docCommentTree = docEnv.getDocTrees().getDocCommentTree(method);
+        if (docCommentTree == null) {
+            return tagMap;
+        }
+        TagScanner tagScanner = new TagScanner(tagMap);
+        tagScanner.visit(docCommentTree, null);
         return tagMap;
     }
 
@@ -275,10 +291,9 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
     private void generateDocsFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws JsonGenerationException, JsonMappingException,
             IOException {
         ObjectMapper mapper = new ObjectMapper();
-        AnnotationIntrospector introspector = new JaxbAnnotationIntrospector(TypeFactory.defaultInstance());
+        AnnotationIntrospector introspector = new JakartaXmlBindAnnotationIntrospector(TypeFactory.defaultInstance());
         mapper.setAnnotationIntrospector(introspector);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-
         MappingDocumentation mappingDocs = new MappingDocumentation();
         List<MappingEndpointDocumentation> endpoints = new ArrayList<MappingEndpointDocumentation>();
         for (ParsedEndpoint parsed : parsedEndpoints) {

@@ -3,6 +3,7 @@ package com.apifest.doclet.option;
 import com.apifest.doclet.DocletMode;
 import jdk.javadoc.doclet.Doclet.Option;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -17,7 +18,7 @@ public class ModeOption implements Option {
 
     @Override
     public String getDescription() {
-        return "Sets the mode";
+        return "Sets the mode. Available modes: " + Arrays.toString(DocletMode.values());
     }
 
     @Override
@@ -35,7 +36,7 @@ public class ModeOption implements Option {
             for (String modeSplit : modesSplit) {
                 DocletMode mode = DocletMode.fromString(modeSplit);
                 if (mode == null) {
-                    throw new IllegalArgumentException("One of the modes you have specified is invalid: " + modeSplit);
+                    throw new IllegalArgumentException("The mode " + modeSplit + " is invalid");
                 }
                 docletModes.add(mode);
             }
