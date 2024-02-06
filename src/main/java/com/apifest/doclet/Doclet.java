@@ -16,12 +16,26 @@
 
 package com.apifest.doclet;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.TreeMap;
 
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.*;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
+import javax.tools.DocumentationTool;
+import javax.tools.ToolProvider;
 
 import com.apifest.api.Mapping;
 import com.apifest.api.Mapping.Backend;
@@ -40,7 +54,6 @@ import com.fasterxml.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationIntr
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.UnknownBlockTagTree;
-import com.sun.source.util.DocTrees;
 import com.sun.source.util.SimpleDocTreeVisitor;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.PropertyException;
@@ -48,7 +61,6 @@ import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
-import jdk.javadoc.doclet.StandardDoclet;
 
 
 /**
@@ -75,15 +87,10 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
             mappingFilenameOption, mappingVersionOption, modeOption,
             customAnnotationOption
     );
-    DocletEnvironment docEnv;
-    public static List<String> errors = new ArrayList<>();
 
     @Override
     public void init(Locale locale, Reporter reporter) {
-        // Initialize your doclet
-        System.out.println("HELLO INIT METHOD");
         this.reporter = reporter;
-        // You can now access the options via reporter.getOptions()
     }
 
     @Override
@@ -115,36 +122,37 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
      * Starts the doclet from the command line.
      *
      * @param args
-     *            List of all the packages that need to be processed.
+     *            Empty. The doclet arguments are read from the doclet.properties
      */
     public static void main(String[] args) {
-//        Doclet.configureDocletProperties();
-//        String[] docletArgs = Doclet.getDocletArgs(args);
-        String[] ass = new String[args.length + 1];
-        ass[0] = "/usr/local/java/jdk-17.0.7/bin/javadoc";
-        for (int i = 0; i < args.length; i++) {
-            ass[i + 1] = args[i];
-        }
-        ProcessBuilder pb = new ProcessBuilder(ass);
-        pb.redirectErrorStream(true);
-        Process p = null;
-        try {
-            p = pb.start();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                System.out.println(line);
+        Properties properties = new Properties();
+        try (InputStream input = Doclet.class.getClassLoader().getResourceAsStream("doclet.properties")) {
+            if (input == null) {
+                System.err.println("Unable to find doclet.properties");
+                return;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+            properties.load(input);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return;
+        }
+
+        String docletArgs = properties.getProperty("doclet.args");
+        if (docletArgs == null || docletArgs.isEmpty()) {
+            System.err.println("Doclet arguments are missing");
+            return;
+        }
+
+        String[] javadocArgs = docletArgs.split("\\s+");
+        DocumentationTool javadocTool = ToolProvider.getSystemDocumentationTool();
+        int result = javadocTool.run(null, null, null, javadocArgs);
+
+        if (result != 0) {
+            System.err.println("Javadoc tool failed with exit code " + result);
         }
     }
 
     public boolean run(DocletEnvironment docEnv) {
-        this.docEnv = docEnv;
         if (!validateConfiguration()) {
             return false;
         }
@@ -158,10 +166,10 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
                 if (!(enclosedElement instanceof ExecutableElement methodElement)) {
                     continue;
                 }
-                Map<String, String> tags = extractTags(methodElement);
+                Map<String, String> tags = extractTags(docEnv, methodElement);
                 ParsedEndpoint parsed;
                 try {
-                    parsed = parseEndpoint(tags, docEnv.getElementUtils().getAllAnnotationMirrors(element));
+                    parsed = parseEndpoint(tags, docEnv.getElementUtils().getAllAnnotationMirrors(enclosedElement));
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
@@ -170,7 +178,6 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
                 }
             }
         }
-
         EndpointComparator.orderEndpoints(parsedEndpoints);
         try {
             if (modeOption.getDocletModes().contains(DocletMode.DOC)) {
@@ -182,9 +189,6 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
         } catch (JsonGenerationException e) {
             System.out.println("ERROR: cannot create mapping documentation file, " + e.getMessage());
             return false;
-        } catch (JsonMappingException e) {
-            System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
-            return false;
         } catch (IOException | JAXBException e) {
             System.out.println("ERROR: cannot create mapping file, " + e.getMessage());
             return false;
@@ -192,7 +196,7 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
         return true;
     }
 
-    class TagScanner extends SimpleDocTreeVisitor<Void, Void> {
+    static class TagScanner extends SimpleDocTreeVisitor<Void, Void> {
         private final Map<String, String> tags;
 
         TagScanner(Map<String, String> tags) {
@@ -207,15 +211,21 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
         @Override
         public Void visitUnknownBlockTag(UnknownBlockTagTree tree, Void p) {
             String name = tree.getTagName();
-            String content = tree.getContent().toString();
-            if (!tags.containsKey(name)) {
-                tags.put(name, content);
-            }
+            String content = extractTagContent(tree.getContent());
+            tags.computeIfAbsent(name, k -> content);
             return null;
+        }
+
+        private String extractTagContent(List<? extends DocTree> content) {
+            StringBuilder contentBuilder = new StringBuilder();
+            for (DocTree dt : content) {
+                contentBuilder.append(dt.toString());
+            }
+            return contentBuilder.toString().trim();
         }
     }
 
-    private Map<String, String> extractTags(ExecutableElement method) {
+    private Map<String, String> extractTags(DocletEnvironment docEnv, ExecutableElement method) {
         Map<String, String> tagMap = new TreeMap<>();
         DocCommentTree docCommentTree = docEnv.getDocTrees().getDocCommentTree(method);
         if (docCommentTree == null) {
@@ -236,7 +246,6 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
             if (backendHost == null || backendHost.isEmpty() || NULL.equalsIgnoreCase(backendHost)) {
                 throw new IllegalArgumentException("backend.host is not set.");
             }
-            System.out.println("customAnnotationsValue: " + customAnnotationOption.getCustomAnnotations().keySet());
         }
         String mappingOutputFile = mappingFilenameOption.getMappingFilename();
         if (modeOption.getDocletModes().contains(DocletMode.MAPPING) && (mappingOutputFile == null || mappingOutputFile.isEmpty())) {
@@ -288,8 +297,7 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
         return parsed;
     }
 
-    private void generateDocsFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws JsonGenerationException, JsonMappingException,
-            IOException {
+    private void generateDocsFile(List<ParsedEndpoint> parsedEndpoints, String outputFile) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         AnnotationIntrospector introspector = new JakartaXmlBindAnnotationIntrospector(TypeFactory.defaultInstance());
         mapper.setAnnotationIntrospector(introspector);
@@ -314,7 +322,12 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
         if (outputFile == null || outputFile.isEmpty() || NULL.equalsIgnoreCase(outputFile)) {
             outputFile = String.format(DEFAULT_MAPPING_NAME, mappingVersion);
         }
+        // set context class loader to avoid ClassNotFoundException for JAXBContext
+        ClassLoader currentLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
         JAXBContext jaxbContext = JAXBContext.newInstance(Mapping.class);
+        Thread.currentThread().setContextClassLoader(currentLoader);
+
         Marshaller marshaller = jaxbContext.createMarshaller();
         try {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
@@ -335,53 +348,5 @@ public class Doclet implements jdk.javadoc.doclet.Doclet {
         ends.setEndpoints(endpoints);
         mapping.setEndpointsWrapper(ends);
         marshaller.marshal(mapping, new File(outputFile));
-    }
-
-    private static String[] getDocletArgs(String[] inputArgs) {
-        String sourcePath = System.getProperty("sourcePath");
-        if (sourcePath == null || sourcePath.isEmpty()) {
-            throw new IllegalArgumentException("sourcePath is invalid.");
-        }
-        String[] argsDoclet = new String[] { "-doclet", Doclet.class.getName(), "-sourcepath", sourcePath };
-        List<String> arguments = new ArrayList<String>();
-        arguments.addAll(Arrays.asList(inputArgs));
-        arguments.addAll(Arrays.asList(argsDoclet));
-        return arguments.toArray(new String[arguments.size()]);
-    }
-
-    private static void configureDocletProperties() {
-        String propertiesFilePath = System.getProperty("propertiesFilePath");
-        if (propertiesFilePath == null) {
-            return;
-        }
-        if (propertiesFilePath.isEmpty()) {
-            throw new IllegalArgumentException("propertiesFilePath is invalid.");
-        }
-        Properties docletProps = Doclet.loadDocletProperties(propertiesFilePath);
-        Enumeration<?> e = docletProps.propertyNames();
-        while (e.hasMoreElements()) {
-            String key = (String) e.nextElement();
-            System.setProperty(key, docletProps.getProperty(key));
-        }
-    }
-
-    private static Properties loadDocletProperties(String filePath) {
-        Properties props = new Properties();
-        InputStream input = null;
-        try {
-            input = new FileInputStream(filePath);
-            props.load(input);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        } finally {
-            if (input != null) {
-                try {
-                    input.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return props;
     }
 }

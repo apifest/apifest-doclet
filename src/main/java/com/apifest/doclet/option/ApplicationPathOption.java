@@ -34,7 +34,11 @@ public class ApplicationPathOption implements Option {
 
     @Override
     public boolean process(String option, List<String> arguments) {
-        applicationPath = arguments.get(0);
+        String value = arguments.get(0);
+        if ("NONE".equalsIgnoreCase(value)) {
+            return true;
+        }
+        applicationPath = value;
         return true;
     }
 

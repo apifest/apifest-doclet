@@ -70,29 +70,24 @@ public class Parser
     // GET, POST, PUT, DELETE, HEAD, OPTIONS
     private static final List<String> httpMethods = Arrays.asList("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS");
     private static final String NULL = "null";
-    private ExecutableElement methodElement;
-
-    public Parser(ExecutableElement methodElement) {
-        this.methodElement = methodElement;
-    }
 
     static void parseMethodAnnotations(List<? extends AnnotationMirror> annotations,
                                        MappingEndpoint mappingEndpoint,
                                        MappingEndpointDocumentation mappingEndpointDocumentation,
                                        Map<String, List<String>> customAnnotations) {
-        for (AnnotationMirror a : annotations) {
-            String annotationTypeName = a.getAnnotationType().toString();
+        for (AnnotationMirror annotation : annotations) {
+            String annotationTypeName = annotation.getAnnotationType().asElement().getSimpleName().toString();
             if (httpMethods.contains(annotationTypeName)) {
                 mappingEndpoint.setMethod(annotationTypeName);
                 mappingEndpointDocumentation.setMethod(annotationTypeName);
                 continue;
             }
-            List<String> propertiesToRead = customAnnotations.get(annotationTypeName);
+            List<String> propertiesToRead = customAnnotations.get(annotation.getAnnotationType().toString());
             if (propertiesToRead == null) {
                 continue;
             }
-            for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : a.getElementValues().entrySet()) {
-                String elementName = entry.getKey().getSimpleName().toString();
+            for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotation.getElementValues().entrySet()) {
+                String elementName = annotation.getAnnotationType().toString() + "." + entry.getKey().getSimpleName();
                 if (!propertiesToRead.isEmpty() && !propertiesToRead.contains(elementName)) {
                     continue;
                 }
@@ -115,11 +110,20 @@ public class Parser
             return null;
         }
         Object value = annotationValue.getValue();
-        if (value instanceof List<?>) {
-            List<?> valueList = (List<?>) value;
-            return String.join(",", valueList.stream()
-                    .map(Object::toString)
-                    .toArray(String[]::new));
+        if (value instanceof List<?> values) {
+            StringBuilder builder = new StringBuilder();
+            for (Object val : values) {
+                if (!builder.isEmpty()) {
+                    builder.append(",");
+                }
+                if (val instanceof AnnotationValue) {
+                    Object actualValue = ((AnnotationValue) val).getValue();
+                    builder.append(actualValue.toString());
+                } else {
+                    builder.append(val.toString());
+                }
+            }
+            return builder.toString();
         }
         return value.toString();
     }
@@ -129,7 +133,7 @@ public class Parser
         String endpointBackendPort = tagMap.get(APIFEST_BACKEND_PORT);
         if (endpointBackendHost != null && endpointBackendPort != null) {
             try {
-                int port = Integer.valueOf(endpointBackendPort);
+                int port = Integer.parseInt(endpointBackendPort);
                 mappingEndpoint.setBackendHost(endpointBackendHost);
                 mappingEndpoint.setBackendPort(port);
             } catch (NumberFormatException e) {
@@ -287,12 +291,7 @@ public class Parser
             }
             String name = m.group(1);
             RequestParamDocumentation paramDocumentation = new RequestParamDocumentation();
-            if (tagMap.containsKey(REQUEST_PARAMS_PREFIX + name + ".name")){
-                paramDocumentation.setName(tagMap.get(REQUEST_PARAMS_PREFIX + name + ".name"));
-            }
-            else {
-                paramDocumentation.setName(name);
-            }
+            paramDocumentation.setName(tagMap.getOrDefault(REQUEST_PARAMS_PREFIX + name + ".name", name));
             paramDocumentation.setDescription(value);
             paramDocumentation.setType(tagMap.get(REQUEST_PARAMS_PREFIX + name + ".type"));
             paramDocumentation.setRequired(!tagMap.containsKey(REQUEST_PARAMS_PREFIX + name + ".optional"));
@@ -318,12 +317,7 @@ public class Parser
             }
             String name = m.group(1);
             ResultParamDocumentation paramDocumentation = new ResultParamDocumentation();
-            if (tagMap.containsKey(RESULT_PARAMS_PREFIX + name + ".name")){
-                paramDocumentation.setName(tagMap.get(RESULT_PARAMS_PREFIX + name + ".name"));
-            }
-            else {
-                paramDocumentation.setName(name);
-            }
+            paramDocumentation.setName(tagMap.getOrDefault(RESULT_PARAMS_PREFIX + name + ".name", name));
             paramDocumentation.setDescription(value);
             paramDocumentation.setType(tagMap.get(RESULT_PARAMS_PREFIX + name + ".type"));
             paramDocumentation.setRequired(!tagMap.containsKey(RESULT_PARAMS_PREFIX + name + ".optional"));
