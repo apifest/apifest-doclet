@@ -62,7 +62,6 @@ public class EndpointComparatorTest
         EndpointComparator.orderEndpoints(endpointList);
         for (int i = 0; i < endpointList.size() - 1; i++){
             Assert.assertTrue(endpointList.get(i).getMappingEndpointDocumentation().getOrder() <= endpointList.get(i+1).getMappingEndpointDocumentation().getOrder());
-
         }
     }
 }

@@ -22,34 +22,18 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import com.apifest.doclet.Doclet;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.apifest.api.params.ExceptionDocumentation;
 import com.apifest.api.params.RequestParamDocumentation;
 import com.apifest.api.params.ResultParamDocumentation;
-import com.apifest.doclet.Doclet;
 
 public class DocletTest {
-    @BeforeMethod
-    public void setup() {
-        System.setProperty("sourcePath", "./src/test/java/com/apifest/doclet/tests/resources");
-        System.setProperty("mode", "doc");
-        System.setProperty("mapping.version", "v1");
-        System.setProperty("mapping.filename", "all-mappings.xml");
-        System.setProperty("mapping.docs.filename", "all-mappings-docs.json");
-        System.setProperty("backend.host", "localhost");
-        System.setProperty("backend.port", "1212");
-        System.setProperty(" application.path", "/");
-        System.setProperty("defaultActionClass", "com.all.mappings.DefaultMapping");
-        System.setProperty("defaultFilterClass", "com.all.mappings.DefaultFilter");
-    }
 
     private void deleteJsonFile(String path) {
         File f = new File(path);
@@ -60,10 +44,8 @@ public class DocletTest {
 
     private void runDoclet() {
         String filePath = "./src/test/java/com/apifest/doclet/tests/resources/TestParsingResource.java";
-        Doclet doclet = new Doclet();
         String[] args = new String[] { filePath };
         Doclet.main(args);
-
     }
 
     private void addRequestParamToMap(String name, String type, String description, boolean required, Map<String, RequestParamDocumentation> correctNameToTypeMap) {
@@ -93,76 +75,83 @@ public class DocletTest {
         exsNameToDescriptionMap.put(name, tempExsParamDoc);
     }
 
-    @AfterMethod
-    public void clearProperties() {
-        System.clearProperty("propertiesFilePath");
-    }
-
     @Test
-    public void when_doclet_run_outputs_tags() throws ParseException, IOException {
+    public void when_doclet_run_outputs_tags() throws IOException {
         // GIVEN
         String parserFilePath = "./all-mappings-docs.json";
         // WHEN
         runDoclet();
         // THEN
-        JSONParser parser = new JSONParser();
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(parserFilePath);
-            JSONObject json = (JSONObject) parser.parse(fileReader);
-            String version = (String) json.get("version");
-            JSONArray arr = (JSONArray) json.get("endpoints");
-            JSONObject obj = (JSONObject) arr.get(1);
-            JSONObject obj1 = (JSONObject) arr.get(0);
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (FileReader fileReader = new FileReader(parserFilePath)) {
+            JsonNode rootNode = objectMapper.readTree(fileReader);
+            String version = rootNode.get("version").asText();
+            ArrayNode endpoints = (ArrayNode) rootNode.get("endpoints");
+            JsonNode obj = endpoints.get(1);
+            JsonNode obj1 = endpoints.get(0);
 
             Assert.assertEquals(version, "v1");
 
-            Assert.assertEquals(obj.get("group"), "Twitter Followers");
-            Assert.assertEquals(obj.get("scope"), "twitter_followers");
-            Assert.assertEquals(obj.get("method"), "GET");
-            Assert.assertEquals(obj.get("endpoint"), "/v1/twitter/followers/metrics");
-            Assert.assertEquals(obj.get("description"), null);
-            Assert.assertEquals(obj.get("summary"), null);
-            Assert.assertEquals(obj.get("paramsDescription"), null);
-            Assert.assertEquals(obj.get("resultsDescription"), null);
+            Assert.assertEquals(obj.get("group").asText(), "Twitter Followers");
+            Assert.assertEquals(obj.get("scope").asText(), "twitter_followers");
+            Assert.assertEquals(obj.get("method").asText(), "GET");
+            Assert.assertEquals(obj.get("endpoint").asText(), "/v1/twitter/followers/metrics");
+            Assert.assertTrue(obj.get("description").isNull());
+            Assert.assertTrue(obj.get("summary").isNull());
+            Assert.assertTrue(obj.get("paramsDescription").isNull());
+            Assert.assertTrue(obj.get("resultsDescription").isNull());
 
-            Assert.assertEquals(obj1.get("group"), "Twitter Followers");
-            Assert.assertEquals(obj1.get("scope"), "twitter_followers");
-            Assert.assertEquals(obj1.get("method"), "GET");
-            Assert.assertEquals(obj1.get("endpoint"), "/v1/twitter/followers/stream");
-            Assert.assertNotEquals(obj1.get("description"), null);
-            Assert.assertNotEquals(obj1.get("summary"), null);
-            Assert.assertEquals(obj1.get("paramsDescription"), "** Parameter description is going here!**");
-            Assert.assertEquals(obj1.get("resultsDescription"), "** Result description is the best! **");
+            Assert.assertEquals(obj1.get("group").asText(), "Twitter Followers");
+            Assert.assertEquals(obj1.get("scope").asText(), "twitter_followers");
+            Assert.assertEquals(obj1.get("method").asText(), "GET");
+            Assert.assertEquals(obj1.get("endpoint").asText(), "/v1/twitter/followers/stream");
+            Assert.assertNotEquals(obj1.get("description").asText(), null);
+            Assert.assertNotEquals(obj1.get("summary").asText(), null);
+            Assert.assertEquals(obj1.get("paramsDescription").asText(), "** Parameter description is going here!**");
+            Assert.assertEquals(obj1.get("resultsDescription").asText(), "** Result description is the best! **");
+            Assert.assertEquals(obj.get("varExpression").asText(), "\\w[\\w\\s%]+(?<!\\s)");
         } finally {
-            if (fileReader != null) {
-                fileReader.close();
-            }
             deleteJsonFile(parserFilePath);
         }
     }
 
     @Test
-    public void check_whether_json_file_will_generate_unsupported_tags() throws IOException, ParseException {
+    public void when_doclet_run_generate_customAnnotations() throws IOException {
         // GIVEN
         String parserFilePath = "./all-mappings-docs.json";
         // WHEN
         runDoclet();
         // THEN
-        JSONParser parser = new JSONParser();
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(parserFilePath);
-            JSONObject json = (JSONObject) parser.parse(fileReader);
-            JSONArray arr = (JSONArray) json.get("endpoints");
-            JSONObject obj = (JSONObject) arr.get(0);
-            JSONObject obj1 = (JSONObject) arr.get(1);
-            Assert.assertEquals(obj.get("test"), null);
-            Assert.assertEquals(obj1.get("test1"), null);
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (FileReader fileReader = new FileReader(parserFilePath)) {
+            JsonNode rootNode = objectMapper.readTree(fileReader);
+            ArrayNode endpoints = (ArrayNode) rootNode.get("endpoints");
+            JsonNode obj = endpoints.get(1);
+            JsonNode customProperties = obj.get("customProperties");
+            Assert.assertEquals(customProperties.get("com.apifest.doclet.tests.resources.CustomAnnotation.value").asText(), "test,test2");
+            Assert.assertEquals(customProperties.get("com.apifest.doclet.tests.resources.Multiple.names").asText(), "test,test2");
+            Assert.assertEquals(customProperties.get("com.apifest.doclet.tests.resources.Multiple.value").asText(), "2,1");
         } finally {
-            if (fileReader != null) {
-                fileReader.close();
-            }
+            deleteJsonFile(parserFilePath);
+        }
+    }
+
+    @Test
+    public void check_whether_json_file_will_generate_unsupported_tags() throws IOException {
+        // GIVEN
+        String parserFilePath = "./all-mappings-docs.json";
+        // WHEN
+        runDoclet();
+        // THEN
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (FileReader fileReader = new FileReader(parserFilePath)) {
+            JsonNode rootNode = objectMapper.readTree(fileReader);
+            ArrayNode endpoints = (ArrayNode) rootNode.get("endpoints");
+            JsonNode obj = endpoints.get(1);
+            JsonNode obj1 = endpoints.get(0);
+            Assert.assertNull(obj.get("test"));
+            Assert.assertNull(obj1.get("test1"));
+        } finally {
             deleteJsonFile(parserFilePath);
         }
     }
@@ -174,19 +163,14 @@ public class DocletTest {
         // WHEN
         runDoclet();
         // THEN
-        JSONParser parser = new JSONParser();
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(parserFilePath);
-            JSONObject json = (JSONObject) parser.parse(fileReader);
-            JSONArray arr = (JSONArray) json.get("endpoints");
-            JSONObject obj = (JSONObject) arr.get(0);
-            Assert.assertEquals(obj.get("wrongtag"), null);
-            Assert.assertEquals(obj.get("@wrongtag"), null);
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (FileReader fileReader = new FileReader(parserFilePath)) {
+            JsonNode rootNode = objectMapper.readTree(fileReader);
+            ArrayNode endpoints = (ArrayNode) rootNode.get("endpoints");
+            JsonNode obj = endpoints.get(1);
+            Assert.assertNull(obj.get("wrongtag"));
+            Assert.assertNull(obj.get("@wrongtag"));
         } finally {
-            if (fileReader != null) {
-                fileReader.close();
-            }
             deleteJsonFile(parserFilePath);
         }
     }
@@ -201,31 +185,22 @@ public class DocletTest {
         // WHEN
         runDoclet();
         // THEN
-        JSONParser parser = new JSONParser();
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(parserFilePath);
-            JSONObject json = (JSONObject) parser.parse(fileReader);
-            JSONArray arr = (JSONArray) json.get("endpoints");
-            JSONObject obj = (JSONObject) arr.get(1);
-
-            JSONArray reqParam = (JSONArray) obj.get("requestParams");
-
-            for (int i = 0; i < reqParam.size(); i++) {
-                JSONObject currentParam = (JSONObject) reqParam.get(i);
-                String currentName = (String) currentParam.get("name");
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (FileReader fileReader = new FileReader(parserFilePath)) {
+            JsonNode rootNode = objectMapper.readTree(fileReader);
+            ArrayNode endpoints = (ArrayNode) rootNode.get("endpoints");
+            JsonNode obj = endpoints.get(1);
+            JsonNode requestParams = obj.get("requestParams");
+            for (JsonNode requestParam : requestParams) {
+                String currentName = requestParam.get("name").asText();
                 RequestParamDocumentation correctCurrentParam = correctNameToTypeMap.get(currentName);
-                Assert.assertEquals((String) currentParam.get("type"), correctCurrentParam.getType());
-                Assert.assertEquals((String) currentParam.get("name"), correctCurrentParam.getName());
-                Assert.assertEquals((String) currentParam.get("description"), correctCurrentParam.getDescription());
-                Assert.assertEquals(currentParam.get("required"), correctCurrentParam.isRequired());
-                // System.out.println(currentParam.get("name"));
-                // System.out.println(correctCurrentParam.getName());
+                Assert.assertEquals(requestParam.get("type").asText(), correctCurrentParam.getType());
+                Assert.assertEquals(currentName, correctCurrentParam.getName());
+                Assert.assertEquals(requestParam.get("description").asText(), correctCurrentParam.getDescription());
+                Assert.assertEquals(requestParam.get("required").asBoolean(), correctCurrentParam.isRequired());
             }
+
         } finally {
-            if (fileReader != null) {
-                fileReader.close();
-            }
             deleteJsonFile(parserFilePath);
         }
     }
@@ -242,29 +217,21 @@ public class DocletTest {
         // WHEN
         runDoclet();
         // THEN
-        JSONParser parser = new JSONParser();
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(parserFilePath);
-            JSONObject json = (JSONObject) parser.parse(fileReader);
-            JSONArray arr = (JSONArray) json.get("endpoints");
-            JSONObject obj = (JSONObject) arr.get(0);
-
-            JSONArray reqParam = (JSONArray) obj.get("requestParams");
-
-            for (int i = 0; i < reqParam.size(); i++) {
-                JSONObject currentParam = (JSONObject) reqParam.get(i);
-                String currentName = (String) currentParam.get("name");
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (FileReader fileReader = new FileReader(parserFilePath)) {
+            JsonNode rootNode = objectMapper.readTree(fileReader);
+            ArrayNode endpoints = (ArrayNode) rootNode.get("endpoints");
+            JsonNode obj = endpoints.get(1);
+            JsonNode requestParams = obj.get("requestParams");
+            for (JsonNode requestParam : requestParams) {
+                String currentName = requestParam.get("name").asText();
                 RequestParamDocumentation correctCurrentParam = correctNameToTypeMap.get(currentName);
-                Assert.assertEquals((String) currentParam.get("type"), correctCurrentParam.getType());
-                Assert.assertEquals((String) currentParam.get("name"), correctCurrentParam.getName());
-                Assert.assertEquals((String) currentParam.get("description"), correctCurrentParam.getDescription());
-                Assert.assertEquals(currentParam.get("required"), correctCurrentParam.isRequired());
+                Assert.assertEquals(requestParam.get("type").asText(), correctCurrentParam.getType());
+                Assert.assertEquals(currentName, correctCurrentParam.getName());
+                Assert.assertEquals(requestParam.get("description").asText(), correctCurrentParam.getDescription());
+                Assert.assertEquals(requestParam.get("required").asBoolean(), correctCurrentParam.isRequired());
             }
         } finally {
-            if (fileReader != null) {
-                fileReader.close();
-            }
             deleteJsonFile(parserFilePath);
         }
     }
@@ -286,29 +253,22 @@ public class DocletTest {
         // WHEN
         runDoclet();
         // THEN
-        JSONParser parser = new JSONParser();
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(parserFilePath);
-            JSONObject json = (JSONObject) parser.parse(fileReader);
-            JSONArray arr = (JSONArray) json.get("endpoints");
-            JSONObject obj = (JSONObject) arr.get(1);
-
-            JSONArray resParam = (JSONArray) obj.get("resultParams");
-            for (int i = 0; i < resParam.size(); i++) {
-                JSONObject currentParam = (JSONObject) resParam.get(i);
-                String currentName = (String) currentParam.get("name");
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (FileReader fileReader = new FileReader(parserFilePath)) {
+            JsonNode rootNode = objectMapper.readTree(fileReader);
+            ArrayNode endpoints = (ArrayNode) rootNode.get("endpoints");
+            JsonNode obj = endpoints.get(1);
+            JsonNode resultParams = obj.get("resultParams");
+            for (JsonNode resultParam : resultParams) {
+                String currentName = resultParam.get("name").asText();
                 ResultParamDocumentation correctCurrentParam = resNameToTypeMap.get(currentName);
-                Assert.assertEquals((String) currentParam.get("type"), correctCurrentParam.getType());
-                Assert.assertEquals((String) currentParam.get("name"), correctCurrentParam.getName());
-                Assert.assertEquals((String) currentParam.get("description"), correctCurrentParam.getDescription());
-                Assert.assertEquals(currentParam.get("required"), correctCurrentParam.isRequired());
+                Assert.assertEquals(resultParam.get("type").asText(), correctCurrentParam.getType());
+                Assert.assertEquals(currentName, correctCurrentParam.getName());
+                Assert.assertEquals(resultParam.get("description").asText(), correctCurrentParam.getDescription());
+                Assert.assertEquals(resultParam.get("required").asBoolean(), correctCurrentParam.isRequired());
 
             }
         } finally {
-            if (fileReader != null) {
-                fileReader.close();
-            }
             deleteJsonFile(parserFilePath);
         }
     }
@@ -326,28 +286,21 @@ public class DocletTest {
         // WHEN
         runDoclet();
         // THEN
-        JSONParser parser = new JSONParser();
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(parserFilePath);
-            JSONObject json = (JSONObject) parser.parse(fileReader);
-            JSONArray arr = (JSONArray) json.get("endpoints");
-            JSONObject obj = (JSONObject) arr.get(0);
-
-            JSONArray resParam = (JSONArray) obj.get("resultParams");
-            for (int i = 0; i < resParam.size(); i++) {
-                JSONObject currentParam = (JSONObject) resParam.get(i);
-                String currentName = (String) currentParam.get("name");
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (FileReader fileReader = new FileReader(parserFilePath)) {
+            JsonNode rootNode = objectMapper.readTree(fileReader);
+            ArrayNode endpoints = (ArrayNode) rootNode.get("endpoints");
+            JsonNode obj = endpoints.get(0);
+            JsonNode resultParams = obj.get("resultParams");
+            for (JsonNode resultParam : resultParams) {
+                String currentName = resultParam.get("name").asText();
                 ResultParamDocumentation correctCurrentParam = resNameToTypeMap.get(currentName);
-                Assert.assertEquals((String) currentParam.get("type"), correctCurrentParam.getType());
-                Assert.assertEquals((String) currentParam.get("name"), correctCurrentParam.getName());
-                Assert.assertEquals((String) currentParam.get("description"), correctCurrentParam.getDescription());
-                Assert.assertEquals(currentParam.get("required"), correctCurrentParam.isRequired());
+                Assert.assertEquals(resultParam.get("type").asText(), correctCurrentParam.getType());
+                Assert.assertEquals(currentName, correctCurrentParam.getName());
+                Assert.assertEquals(resultParam.get("description").asText(), correctCurrentParam.getDescription());
+                Assert.assertEquals(resultParam.get("required").asBoolean(), correctCurrentParam.isRequired());
             }
         } finally {
-            if (fileReader != null) {
-                fileReader.close();
-            }
             deleteJsonFile(parserFilePath);
         }
     }
@@ -361,28 +314,21 @@ public class DocletTest {
         // WHEN
         runDoclet();
         // THEN
-        JSONParser parser = new JSONParser();
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(parserFilePath);
-            JSONObject json = (JSONObject) parser.parse(fileReader);
-            JSONArray arr = (JSONArray) json.get("endpoints");
-            JSONObject obj = (JSONObject) arr.get(1);
-
-            JSONArray exsParam = (JSONArray) obj.get("exceptions");
-            for (int i = 0; i < exsParam.size(); i++) {
-                JSONObject currentParam = (JSONObject) exsParam.get(i);
-                String currentName = (String) currentParam.get("name");
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (FileReader fileReader = new FileReader(parserFilePath)) {
+            JsonNode rootNode = objectMapper.readTree(fileReader);
+            ArrayNode endpoints = (ArrayNode) rootNode.get("endpoints");
+            JsonNode obj = endpoints.get(1);
+            JsonNode exceptionsParams = obj.get("exceptions");
+            for (JsonNode exceptionParam : exceptionsParams) {
+                String currentName = exceptionParam.get("name").asText();
                 ExceptionDocumentation correctCurrentParam = exsNameToDescriptionMap.get(currentName);
-                Assert.assertEquals((String) currentParam.get("name"), correctCurrentParam.getName());
-                Assert.assertEquals((String) currentParam.get("condition"), correctCurrentParam.getCondition());
-                Assert.assertEquals((String) currentParam.get("description"), correctCurrentParam.getDescription());
-                Assert.assertEquals(currentParam.get("code"), new Long(correctCurrentParam.getCode()));
+                Assert.assertEquals(currentName, correctCurrentParam.getName());
+                Assert.assertEquals(exceptionParam.get("condition").asText(), correctCurrentParam.getCondition());
+                Assert.assertEquals(exceptionParam.get("description").asText(), correctCurrentParam.getDescription());
+                Assert.assertEquals(exceptionParam.get("code").asLong(), Long.valueOf(correctCurrentParam.getCode()).longValue());
             }
         } finally {
-            if (fileReader != null) {
-                fileReader.close();
-            }
             deleteJsonFile(parserFilePath);
         }
     }
@@ -396,28 +342,21 @@ public class DocletTest {
         // WHEN
         runDoclet();
         // THEN
-        JSONParser parser = new JSONParser();
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(parserFilePath);
-            JSONObject json = (JSONObject) parser.parse(fileReader);
-            JSONArray arr = (JSONArray) json.get("endpoints");
-            JSONObject obj = (JSONObject) arr.get(0);
-
-            JSONArray exsParam = (JSONArray) obj.get("exceptions");
-            for (int i = 0; i < exsParam.size(); i++) {
-                JSONObject currentParam = (JSONObject) exsParam.get(i);
-                String currentName = (String) currentParam.get("name");
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (FileReader fileReader = new FileReader(parserFilePath)) {
+            JsonNode rootNode = objectMapper.readTree(fileReader);
+            ArrayNode endpoints = (ArrayNode) rootNode.get("endpoints");
+            JsonNode obj = endpoints.get(0);
+            JsonNode exceptionsParams = obj.get("exceptions");
+            for (JsonNode exceptionParam : exceptionsParams) {
+                String currentName = exceptionParam.get("name").asText();
                 ExceptionDocumentation correctCurrentParam = exsNameToDescriptionMap.get(currentName);
-                Assert.assertEquals((String) currentParam.get("name"), correctCurrentParam.getName());
-                Assert.assertEquals((String) currentParam.get("condition"), correctCurrentParam.getCondition());
-                Assert.assertEquals((String) currentParam.get("description"), correctCurrentParam.getDescription());
-                Assert.assertEquals(currentParam.get("code"), new Long(correctCurrentParam.getCode()));
+                Assert.assertEquals(currentName, correctCurrentParam.getName());
+                Assert.assertEquals(exceptionParam.get("condition").asText(), correctCurrentParam.getCondition());
+                Assert.assertEquals(exceptionParam.get("description").asText(), correctCurrentParam.getDescription());
+                Assert.assertEquals(exceptionParam.get("code").asLong(), Long.valueOf(correctCurrentParam.getCode()).longValue());
             }
         } finally {
-            if (fileReader != null) {
-                fileReader.close();
-            }
             deleteJsonFile(parserFilePath);
         }
     }
@@ -429,23 +368,17 @@ public class DocletTest {
         // WHEN
         runDoclet();
         // THEN
-        JSONParser parser = new JSONParser();
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(parserFilePath);
-            JSONObject json = (JSONObject) parser.parse(fileReader);
-            JSONArray arr = (JSONArray) json.get("endpoints");
-            JSONObject obj = (JSONObject) arr.get(0);
-            JSONObject obj1 = (JSONObject) arr.get(1);
-            Assert.assertEquals(obj.get("endpoint"), "/v1/twitter/followers/stream");
-            Assert.assertEquals(obj1.get("endpoint"), "/v1/twitter/followers/metrics");
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (FileReader fileReader = new FileReader(parserFilePath)) {
+            JsonNode rootNode = objectMapper.readTree(fileReader);
+            ArrayNode endpoints = (ArrayNode) rootNode.get("endpoints");
+            JsonNode obj = endpoints.get(0);
+            JsonNode obj1 = endpoints.get(1);
+            Assert.assertEquals(obj.get("endpoint").asText(), "/v1/twitter/followers/stream");
+            Assert.assertEquals(obj1.get("endpoint").asText(), "/v1/twitter/followers/metrics");
 
         } finally {
-            if (fileReader != null) {
-                fileReader.close();
-            }
             deleteJsonFile(parserFilePath);
         }
-
     }
 }

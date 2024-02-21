@@ -32,9 +32,10 @@ import com.apifest.api.ResponseFilter;
 import com.apifest.api.params.ExceptionDocumentation;
 import com.apifest.api.params.RequestParamDocumentation;
 import com.apifest.api.params.ResultParamDocumentation;
-import com.sun.javadoc.AnnotationDesc;
-import com.sun.javadoc.AnnotationDesc.ElementValuePair;
-import com.sun.javadoc.AnnotationValue;
+
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
+import javax.lang.model.element.ExecutableElement;
 
 public class Parser
 {
@@ -67,55 +68,64 @@ public class Parser
     private static final String NOT_SUPPORTED_VALUE = "value \"%s\" not supported for %s tag";
 
     // GET, POST, PUT, DELETE, HEAD, OPTIONS
-    private static List<String> httpMethods = Arrays.asList("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS");
+    private static final List<String> httpMethods = Arrays.asList("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS");
     private static final String NULL = "null";
 
-    static void parseMethodAnnotations(AnnotationDesc[] annotations,
-            MappingEndpoint mappingEndpoint,
-            MappingEndpointDocumentation mappingEndpointDocumentation,
-            Map<String, List<String>> customAnnotations) {
-        for (AnnotationDesc a : annotations) {
-            if (a != null && (httpMethods.contains(a.annotationType().name()))) {
-                String annotationTypeName = a.annotationType().name();
+    static void parseMethodAnnotations(List<? extends AnnotationMirror> annotations,
+                                       MappingEndpoint mappingEndpoint,
+                                       MappingEndpointDocumentation mappingEndpointDocumentation,
+                                       Map<String, List<String>> customAnnotations) {
+        for (AnnotationMirror annotation : annotations) {
+            String annotationTypeName = annotation.getAnnotationType().asElement().getSimpleName().toString();
+            if (httpMethods.contains(annotationTypeName)) {
                 mappingEndpoint.setMethod(annotationTypeName);
                 mappingEndpointDocumentation.setMethod(annotationTypeName);
                 continue;
             }
-            List<String> propertiesToRead = customAnnotations.get(a.annotationType().qualifiedName());
-            if (propertiesToRead != null) {
-                for (ElementValuePair elementValuePair : a.elementValues()) {
-                    if (propertiesToRead.isEmpty() || propertiesToRead.contains(elementValuePair.element().name())) {
-                        if (mappingEndpoint.getCustomProperties() == null) {
-                            mappingEndpoint.setCustomProperties(new HashMap<String, String>());
-                        }
-                        if (mappingEndpointDocumentation.getCustomProperties() == null) {
-                            mappingEndpointDocumentation.setCustomProperties(new HashMap<String, String>());
-                        }
-                        String valueString;
-                        if (elementValuePair.value().value() instanceof AnnotationValue[]) {
-                            AnnotationValue[] value = (AnnotationValue[]) elementValuePair.value().value();
-                            StringBuilder builder = new StringBuilder();
-                            for (AnnotationValue annotationValue : value) {
-                                if (builder.length() > 0) {
-                                    builder.append(",");
-                                }
-                                builder.append(annotationValue.value().toString());
-                            }
-                            valueString = builder.toString();
-                        } else {
-                            valueString = elementValuePair.value().toString();
-                        }
-                        mappingEndpoint.getCustomProperties()
-                                .put(elementValuePair.element().qualifiedName(),
-                                        valueString);
-                        mappingEndpointDocumentation.getCustomProperties()
-                                .put(elementValuePair.element().qualifiedName(),
-                                        valueString);
-                    }
+            List<String> propertiesToRead = customAnnotations.get(annotation.getAnnotationType().toString());
+            if (propertiesToRead == null) {
+                continue;
+            }
+            for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotation.getElementValues().entrySet()) {
+                String elementName = annotation.getAnnotationType().toString() + "." + entry.getKey().getSimpleName();
+                if (!propertiesToRead.isEmpty() && !propertiesToRead.contains(elementName)) {
+                    continue;
+                }
+                String valueString = getValueString(entry.getValue());
+                if (mappingEndpoint.getCustomProperties() == null) {
+                    mappingEndpoint.setCustomProperties(new HashMap<>());
+                }
+                if (mappingEndpointDocumentation.getCustomProperties() == null) {
+                    mappingEndpointDocumentation.setCustomProperties(new HashMap<>());
+                }
+                mappingEndpoint.getCustomProperties().put(elementName, valueString);
+                mappingEndpointDocumentation.getCustomProperties().put(elementName, valueString);
+            }
+        }
+    }
+
+    // Helper method to get the string representation of the annotation value
+    private static String getValueString(AnnotationValue annotationValue) {
+        if (annotationValue == null) {
+            return null;
+        }
+        Object value = annotationValue.getValue();
+        if (value instanceof List<?> values) {
+            StringBuilder builder = new StringBuilder();
+            for (Object val : values) {
+                if (!builder.isEmpty()) {
+                    builder.append(",");
+                }
+                if (val instanceof AnnotationValue) {
+                    Object actualValue = ((AnnotationValue) val).getValue();
+                    builder.append(actualValue.toString());
+                } else {
+                    builder.append(val.toString());
                 }
             }
-
+            return builder.toString();
         }
+        return value.toString();
     }
 
     static void parseEndpointBackendTags(Map<String, String> tagMap, MappingEndpoint mappingEndpoint, String defaultBackendHost, Integer defaultBackendPort) {
@@ -123,7 +133,7 @@ public class Parser
         String endpointBackendPort = tagMap.get(APIFEST_BACKEND_PORT);
         if (endpointBackendHost != null && endpointBackendPort != null) {
             try {
-                int port = Integer.valueOf(endpointBackendPort);
+                int port = Integer.parseInt(endpointBackendPort);
                 mappingEndpoint.setBackendHost(endpointBackendHost);
                 mappingEndpoint.setBackendPort(port);
             } catch (NumberFormatException e) {
@@ -281,12 +291,7 @@ public class Parser
             }
             String name = m.group(1);
             RequestParamDocumentation paramDocumentation = new RequestParamDocumentation();
-            if (tagMap.containsKey(REQUEST_PARAMS_PREFIX + name + ".name")){
-                paramDocumentation.setName(tagMap.get(REQUEST_PARAMS_PREFIX + name + ".name"));
-            }
-            else {
-                paramDocumentation.setName(name);
-            }
+            paramDocumentation.setName(tagMap.getOrDefault(REQUEST_PARAMS_PREFIX + name + ".name", name));
             paramDocumentation.setDescription(value);
             paramDocumentation.setType(tagMap.get(REQUEST_PARAMS_PREFIX + name + ".type"));
             paramDocumentation.setRequired(!tagMap.containsKey(REQUEST_PARAMS_PREFIX + name + ".optional"));
@@ -312,12 +317,7 @@ public class Parser
             }
             String name = m.group(1);
             ResultParamDocumentation paramDocumentation = new ResultParamDocumentation();
-            if (tagMap.containsKey(RESULT_PARAMS_PREFIX + name + ".name")){
-                paramDocumentation.setName(tagMap.get(RESULT_PARAMS_PREFIX + name + ".name"));
-            }
-            else {
-                paramDocumentation.setName(name);
-            }
+            paramDocumentation.setName(tagMap.getOrDefault(RESULT_PARAMS_PREFIX + name + ".name", name));
             paramDocumentation.setDescription(value);
             paramDocumentation.setType(tagMap.get(RESULT_PARAMS_PREFIX + name + ".type"));
             paramDocumentation.setRequired(!tagMap.containsKey(RESULT_PARAMS_PREFIX + name + ".optional"));

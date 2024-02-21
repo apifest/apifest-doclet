@@ -1,15 +1,15 @@
 package com.apifest.doclet.tests.resources;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 @Path("/{platform: komfo|sitecore}/{clientId}/followers")
 public interface TestParsingResource {
@@ -19,6 +19,7 @@ public interface TestParsingResource {
      * @apifest.internal {platform}/{clientId}/followers/metrics
      * @apifest.scope twitter_followers
      * @apifest.auth.type client-app
+     * @apifest.re.clientId \w[\w\s%]+(?<!\s)
      * @apifest.docs.group Twitter Followers
      * @return Response
      * @test this is any test annotation**
@@ -61,6 +62,8 @@ public interface TestParsingResource {
     @GET
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @CustomAnnotation(value = {"test", "test2"} )
+    @Multiple(names = {"test", "test2"}, value = {2, 1} )
     Response getMetrics(@PathParam("clientId") String clientId, @QueryParam("ids") String ids, @QueryParam("fields") String fields, @QueryParam("limit") String limit);
 
     @Path("/{endpoint: stream|metrics}")
